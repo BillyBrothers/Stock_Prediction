@@ -23,7 +23,7 @@ My analysis will be conducted on a selection of Big Tech companies (Meta, Apple,
 
 Beyond raw price and volume, the following financial indicators are engineered to provide deeper insights into market trends:
 
-* **Bollinger Bands:** Calculated to characterizeA price volatility and identify overbought/oversold conditions. The **width** of the bands is used as a feature.
+* **Bollinger Bands:** Calculated to characterize A price volatility and identify overbought/oversold conditions. The **width** of the bands is used as a feature.
 * **Relative Strength Index (RSI):** A momentum oscillator to measure the speed and change of price movements, identifying potential reversal points.
 * **Rate of Change (ROC):** A momentum oscillator measuring the percentage change between the current price and a price `n` periods ago, useful for detecting divergences.
 * **Close Price:** The fundamental closing price.
