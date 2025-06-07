@@ -51,7 +51,7 @@ I implement and evaluate three distinct modeling approaches:
 
 
 
-### Results
+## Results
 The performance of each model (ARIMA, XGBoost, Transformer) on the test dataset. Key metrics such as:
 
 * Directional Accuracy: The primary metric, indicating the percentage of times the model correctly predicts the direction of price movement.
