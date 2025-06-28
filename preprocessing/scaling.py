@@ -1,9 +1,15 @@
+# In your scaling.py file
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
+import pandas as pd 
+from sklearn.preprocessing import MinMaxScaler 
+
+
+from preprocessing.imputation import impute_features
 
 def handle_infinite_values(df):
     """
     Detects and replaces infinite values with NaN, then imputes missing values.
+    This function now correctly handles mixed data types by applying checks only to numeric columns.
 
     Parameters:
         df (pd.DataFrame): DataFrame to sanitize and impute.
@@ -11,16 +17,23 @@ def handle_infinite_values(df):
     Returns:
         pd.DataFrame: Cleaned DataFrame with infinite values handled and imputed.
     """
-    df = df.copy()
-    
-    if np.isinf(df.values).any():
-        print("Infinite values detected. Replacing with NaN and imputing...")
-        df.replace([np.inf, -np.inf], np.nan, inplace=True)
-        df = impute_features(df)
+    df_copy = df.copy()
+
+    # Identify numeric columns
+    numeric_cols = df_copy.select_dtypes(include=np.number).columns
+
+    # Check for infinite values ONLY in numeric columns
+    if not numeric_cols.empty and np.isinf(df_copy[numeric_cols]).any().any(): # Added an extra .any() for the check
+        print("Infinite values detected in numeric columns. Replacing with NaN and imputing...")
+        # Replace infinite values with NaN in numeric columns only
+        df_copy[numeric_cols] = df_copy[numeric_cols].replace([np.inf, -np.inf], np.nan)
+        
+        df_copy = impute_features(df_copy)
     else:
-        print("No infinite values detected.")
-    
-    return df
+        print("No infinite values detected in numeric columns.")
+
+    return df_copy
+
 
 
 def scale_features(df, target_col=None, feature_range=(0, 1)):

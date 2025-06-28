@@ -41,27 +41,27 @@ def impute_features(df):
         if col_lower == 'close':
             continue
 
-        # Rule 1: Lagged, rolling, volatility, log, and volume features
+        # Lagged, rolling, volatility, log, and volume features
         if any(key in col_lower for key in [
             "price_lag", "hourly_return_lag", "daily_return_lag", "weekly_return_lag_",
             "sma", "ema", "volume", "rolling_log_avg", "rolling_log_std", "volatility"
         ]):
             df[col] = df[col].ffill()
 
-        # Rule 2: Technical indicators
+        # Technical indicators
         elif any(key in col_lower for key in [
             "atr", "rsi", "macd", "bollinger", "upper_bb", "lower_bb",
             "adx", "di", "%d", "%k", "obv"
         ]):
             df[col] = df[col].fillna(df[col].expanding().median())
 
-        # Rule 3: Price structure features
+        # Price structure features
         elif any(key in col_lower for key in [
             "low_range", "close_range", "range_pct", "rsi_x_volume"
         ]):
             df[col] = df[col].interpolate(method='linear')
 
-        # Rule 4: General fallback
+        # General fallback
         else:
             df[col] = df[col].interpolate(method='linear').ffill().bfill()
 

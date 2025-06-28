@@ -106,8 +106,7 @@ def add_moving_averages(
     else:
         raise ValueError("Invalid method. Choose from 'SMA', 'EMA', or 'Log'.")
 
-    return df
-
+    return df, windows
 
 
 def compute_rolling_stddev(df, target_col, window=7):
@@ -125,7 +124,7 @@ def compute_rolling_stddev(df, target_col, window=7):
     df_copy = df.copy()
     col_name = f'Volatility_StdDEV_{target_col}_{window}'
     df_copy[col_name] = df_copy[target_col].rolling(window=window).std()
-    return df_copy
+    return df_copy, window
 
 
 import pandas as pd
@@ -156,9 +155,11 @@ def add_technical_indicators(df):
         pd.DataFrame: A copy enriched with technical indicator features
     """
     df = df.copy()
+    window_sizes = []
 
     # ATR
     atr_periods = [7, 14, 21, 28, 35]
+    window_sizes.extend(atr_periods)
     for period in atr_periods:
         atr = AverageTrueRange(
             high=df['High'],
@@ -170,13 +171,19 @@ def add_technical_indicators(df):
         df[f'ATR_{period}H'] = atr.average_true_range()
 
     # RSI
-    rsi = RSIIndicator(close=df['Close'], window=14)
+    rsi_window = 14
+    window_sizes.append(rsi_window)
+    rsi = RSIIndicator(close=
+    df['Close'], window=14)
+    
     df['RSI_14'] = rsi.rsi()
     df['RSI_Overbought'] = (df['RSI_14'] > 70).astype(int)
     df['RSI_Oversold'] = (df['RSI_14'] < 30).astype(int)
     df['RSI_x_Volume'] = df['RSI_14'] * df['Volume']  
 
     # MACD
+    macd_windows = [26, 12, 9]
+    window_sizes.extend(macd_windows)
     macd = MACD(close=df['Close'], window_slow=26, window_fast=12, window_sign=9, fillna=False)
     df['MACD'] = macd.macd()
     df['MACD_Signal'] = macd.macd_signal()
@@ -187,7 +194,10 @@ def add_technical_indicators(df):
     df['MACD_Cross_Down'] = ((df['MACD'] < df['MACD_Signal']) & (df['MACD_Prev'] >= df['MACD_Signal_Prev'])).astype(int)
 
     # Bollinger Bands
-    bb = BollingerBands(close=df['Close'], window=2, window_dev=2, fillna=False)
+    bb_window = 2
+    window_dev = 2
+    window_sizes.append(bb_window)
+    bb = BollingerBands(close=df['Close'], window=bb_window, window_dev=window_dev, fillna=False)
     df['Bollinger_Lower'] = bb.bollinger_lband()
     df['Bollinger_Middle'] = bb.bollinger_mavg()
     df['Bollinger_Upper'] = bb.bollinger_hband()
@@ -198,11 +208,13 @@ def add_technical_indicators(df):
     df['Price_Below_Lower_BB'] = (df['Close'] < df['Bollinger_Lower']).astype(int)
 
     # Stochastic Oscillator
+    stoch_window = 14
+    window_sizes.append(stoch_window)
     stoch = StochasticOscillator(
         high=df['High'],
         low=df['Low'],
         close=df['Close'],
-        window=14,
+        window=stoch_window,
         smooth_window=3,
         fillna=False
     )
@@ -210,11 +222,13 @@ def add_technical_indicators(df):
     df['%D'] = stoch.stoch_signal()
 
     # ADX
+    adx_window = 14
+    window_sizes.append(adx_window)
     adx = ADXIndicator(
         high=df['High'],
         low=df['Low'],
         close=df['Close'],
-        window=14,
+        window=adx_window,
         fillna=False
     )
     df['ADX_14'] = adx.adx()
@@ -222,8 +236,7 @@ def add_technical_indicators(df):
     df['Negative_DI'] = adx.adx_neg()
     df['Trend_Strong_ADX'] = (df['ADX_14'] > 25).astype(int)
 
-    return df
-
+    return df, window_sizes
 
 
 import numpy as np

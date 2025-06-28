@@ -1,15 +1,34 @@
-# arima_forecaster.py
-
 import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import mean_squared_error
-from statsmodels.tsa.arima.model import ARIMA
 from pmdarima import auto_arima
+from statsmodels.tsa.arima.model import ARIMA
+import warnings
 
 def run_arima_forecast(msft_df, target_col='Close', n_splits=100):
+    """
+    Runs an ARIMA time series forecast with hyperparameter tuning via auto_arima
+    and walk-forward validation.
+
+    Parameters:
+        msft_df (pd.DataFrame): DataFrame containing the target_col.
+        target_col (str): The name of the target column (e.g., 'Close').
+        n_splits (int): Number of splits for TimeSeriesSplit cross-validation.
+
+    Returns:
+        tuple: A tuple containing:
+            - pd.DataFrame: DataFrame with the ARIMA Mean Squared Error and Order.
+            - list: List of actual values for the first step of each test split.
+            - list: List of predicted values for the first step of each test split.
+            - tuple: The (p,d,q) order found by auto_arima.
+    """
     y = msft_df[target_col]
 
-    # Hyperparameter tuning with auto_arima
+    # Suppress specific statsmodels warnings that can be verbose during fitting
+    warnings.filterwarnings("ignore", category=UserWarning, module="statsmodels")
+    warnings.filterwarnings("ignore", category=FutureWarning)
+
+    # Hyperparameter tuning with auto_arima on the full series
     arima_hypertuned = auto_arima(
         y,
         seasonal=False,
@@ -21,7 +40,7 @@ def run_arima_forecast(msft_df, target_col='Close', n_splits=100):
         m=7,
         d=None,
         D=None,
-        trace=True,
+        trace=False,
         error_action='ignore',
         suppress_warnings=True,
         stepwise=False
@@ -43,5 +62,8 @@ def run_arima_forecast(msft_df, target_col='Close', n_splits=100):
         predicted_values.append(forecast.values[0])
 
     mse = mean_squared_error(actual_values, predicted_values)
-    results_df = pd.DataFrame({"Actual_vs_Predicted_MSE": [mse]})
-    return results_df, actual_values, predicted_values
+    # MODIFIED: Include ARIMA_Order in results_df
+    results_df = pd.DataFrame({"ARIMA_MSE": [mse], "ARIMA_Order": [f"({best_p},{best_d},{best_q})"]})
+
+    # MODIFIED: Return the order as the fourth item in the tuple
+    return results_df, actual_values, predicted_values, (best_p, best_d, best_q)
