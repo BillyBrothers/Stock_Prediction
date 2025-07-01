@@ -1,7 +1,12 @@
+# --- Imports ---
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import mplfinance as mpf
+import plotly.graph_objects as go
+
+# --- Custom Modules ---
 from preprocessing.data_loading import load_stock_data
 from preprocessing.feature_engineering import (
     add_lag_prices,
@@ -17,6 +22,8 @@ from preprocessing.imputation import (
     trim_nans_by_window,
     impute_features
 )
+from custom_visualizations.interactive_candlesticks import interactive_candlesticks
+
 
 # Import models
 from Modeling.base_model import run_naive_forecast
@@ -25,116 +32,175 @@ from Modeling.ARIMAX_model import run_arimax_forecast
 from Modeling.xg_boost_model import run_xgb_forecast
 from Modeling.lstm_model import run_lstm_forecast # Import LSTM model
 
-# Map features to functions
+# --- Feature Registry ---
 FEATURE_FUNCTIONS = {
-    "Lag Prices": add_lag_prices,
-    "Lagged Returns": add_lagged_returns,
     "Moving Averages": add_moving_averages,
     "Rolling Std Dev": compute_rolling_stddev,
     "Technical Indicators": add_technical_indicators,
-    "Time Features": add_time_features,
+    "Lag Prices": add_lag_prices,
+    "Lagged Returns": add_lagged_returns,
     "Volume Features": add_volume_features,
-    "Price Structure Features": add_price_features
+    "Time Features": add_time_features,
+    "Price Structure Features": add_price_features,
 }
 
-st.set_page_config(layout="wide")
-st.title('Stock Prediction and Analysis App')
+FEATURE_WINDOWS = {
+    "Moving Averages": [5, 7, 10, 21, 28, 35],
+    "Rolling Std Dev": [7],
+    "Technical Indicators": [7, 9, 12, 14, 21, 26, 28, 35],
+    "Lag Prices": [1, 2, 3, 4, 5, 6],
+    "Lagged Returns": [1, 2, 3, 4, 5, 6],
+    "Volume Features": [7, 14, 21, 28, 35, 9],
+    "Time Features": [],
+    "Price Structure Features": [],
+}
 
-# --- Sidebar layout ---
+
+# --- Page Config ---
+st.set_page_config(layout="wide")
+st.title('📊 Stock Prediction and Analysis App')
+
+# --- Sidebar ---
 st.sidebar.title("📈 Configuration")
 
 ticker = st.sidebar.text_input("Ticker Symbol", value="AAPL")
 period = st.sidebar.selectbox("Select Period", ["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"], index=3)
-interval = st.sidebar.selectbox("Select Interval", ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "1wk", "1mo", "3mo"], index=8)
-
+interval = st.sidebar.selectbox("Select Interval", ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1d", "1wk", "1mo", "3mo"], index=8)
 
 apply_features = st.sidebar.checkbox("Add Engineered Features")
 
-if apply_features:
-    selected_blocks = st.sidebar.multiselect(
-        "Select Feature Blocks",
-        options=list(FEATURE_FUNCTIONS.keys()),
-        default=["Lag Prices", "Lagged Returns", "Moving Averages", "Rolling Std Dev", "Technical Indicators", "Time Features", "Volume Features", "Price Structure Features"]
-    )
-else:
-    selected_blocks = []
+selected_blocks = st.sidebar.multiselect(
+    "Select Feature Blocks",
+    options=list(FEATURE_FUNCTIONS.keys()),
+    default=list(FEATURE_FUNCTIONS.keys())
+) if apply_features else []
 
-# --- Data Loading and Preprocessing Logic (triggered by Load Data button) ---
+# --- Session State Initialization ---
 if 'df_loaded' not in st.session_state:
     st.session_state.df_loaded = None
+
 if 'max_calculated_feature_window' not in st.session_state:
     st.session_state.max_calculated_feature_window = 1
 
-
+# --- Load Data Button ---
 if st.sidebar.button("Load Data"):
-    st.info(f"Loading data for {ticker}...")
+    st.info(f"📦 Loading data for {ticker}...")
 
-    # Reset max_calculated_feature_window on new data load
     st.session_state.max_calculated_feature_window = 1
 
     try:
+        # --- Load and validate data ---
+
         raw_data_output = load_stock_data(ticker, period=period, interval=interval)
 
         if isinstance(raw_data_output, tuple):
             df = raw_data_output[0]
             if not isinstance(df, pd.DataFrame):
-                raise TypeError("The first element of the tuple is not a pandas DataFrame.")
+                raise TypeError("The first element of the returned tuple is not a DataFrame.")
         elif isinstance(raw_data_output, pd.DataFrame):
             df = raw_data_output
         else:
-            raise TypeError(f"load_stock_data returned an unexpected type: {type(raw_data_output)}. Expected pandas DataFrame or a tuple containing one.")
+            raise TypeError(f"load_stock_data returned unexpected type: {type(raw_data_output)}.")
+        
 
+        
+        if not isinstance(df.index, pd.DatetimeIndex) or df.empty:
+            st.error("❌ Loaded data is missing a valid datetime index or contains no rows. This is often caused by Yahoo Finance API limits.")
+            st.info("💡 Try a different period/interval combination — such as '5d / 1m' or '1mo / 5m'.")
+            st.stop()
+
+        # 🔍 Additional check: ensure critical columns are numeric
+        numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+        non_numeric = [col for col in numeric_cols if col in df.columns and not pd.api.types.is_numeric_dtype(df[col])]
+
+        if non_numeric:
+            st.error(f"❌ Detected invalid column types in: {non_numeric}. This may be due to API restrictions or malformed data.")
+            st.info("💡 Try using a shorter period or a coarser interval to get valid numerical data.")
+
+        
+        # --- Display chart ---
         st.subheader("📊 Stock Price Trend (Close Price)")
-        st.line_chart(df['Close'])
+        interactive_candlesticks(df, ticker)
 
-        # --- Initial NaN Check (Before Feature Engineering) ---
+        # --- NaN Diagnostics ---
         initial_nan_count = df.isna().sum().sum()
         st.write(f"Initial NaN count (before feature engineering): **{initial_nan_count}**")
+        st.write("Initial shape:", df.shape)
 
+        # --- Adaptive Window Trimming ---
+        n_rows = len(df)
+        adaptive_feature_windows = {}
+        for feat, windows in FEATURE_WINDOWS.items():
+            valid = [w for w in windows if w < n_rows]
+            adaptive_feature_windows[feat] = valid
+            skipped = [w for w in windows if w >= n_rows]
+            if skipped:
+                st.warning(f"⚠️ Skipped windows {skipped} for '{feat}' — only {n_rows} rows available.")
+
+        # --- Feature Engineering ---
         if apply_features and selected_blocks:
             st.write("🔧 Applying Engineered Features...")
 
             all_windows_applied = []
 
             for feat in selected_blocks:
-                if feat == "Moving Averages":
-                    df, ma_windows = add_moving_averages(df)
-                    if ma_windows:
-                        all_windows_applied.extend(ma_windows)
-                elif feat == "Rolling Std Dev":
-                    df, std_window = compute_rolling_stddev(df, target_col='Close')
-                    all_windows_applied.append(std_window)
-                elif feat == "Technical Indicators":
-                    df, ti_windows = add_technical_indicators(df)
-                    if ti_windows:
-                        all_windows_applied.extend(ti_windows)
-                elif feat == "Lag Prices":
-                    df = add_lag_prices(df)
-                    all_windows_applied.extend([1, 2, 3, 4, 5, 6]) # Assuming these are the lags
-                elif feat == "Lagged Returns":
-                    df = add_lagged_returns(df)
-                    all_windows_applied.extend([1, 2, 3, 4, 5, 6]) # Assuming these are the lags
-                elif feat == "Volume Features":
-                    df = add_volume_features(df)
-                    all_windows_applied.extend([7, 14, 21, 28, 35]) # Example window sizes for volume features
-                    all_windows_applied.append(9) # Example for a specific volume feature window
-                elif feat == "Time Features":
-                    df = add_time_features(df)
-                elif feat == "Price Structure Features":
-                    df = add_price_features(df)
-                else:
-                    st.warning(f"Feature block '{feat}' not explicitly handled for window size tracking. Applying with default call.")
-                    df = FEATURE_FUNCTIONS[feat](df)
+                st.write(f"📣 Applying feature block: {feat}")
 
+                func = FEATURE_FUNCTIONS.get(feat)
+                if not func:
+                    st.warning(f"⚠️ '{feat}' not found in function registry.")
+                    continue
+
+                valid_windows = adaptive_feature_windows.get(feat, [])
+                st.write(f"✅ Valid windows for '{feat}': {valid_windows}")
+                st.write(f"🔍 Data shape before '{feat}': {df.shape}")
+
+                # Pass windows only where needed
+
+                st.write(df.head(10))
+            
+                try:
+                    if feat == "Moving Averages":
+                        df = func(df, windows=valid_windows)
+                    elif feat == "Rolling Std Dev":
+                        df = func(df, windows=valid_windows, target_col='Close')
+                    elif feat == "Volume Features":
+                        df = func(df, volume_sma_windows=valid_windows)
+                    else:
+                        df = func(df)
+                    
+                    st.write(f"✅ Finished applying '{feat}' — new shape: {df.shape}")
+                except Exception as e:
+                    st.error(f"❌ Error applying '{feat}': {e}")
+                    st.stop()  # Optional: stop app execution for deeper inspection
+    
+                # Type safety
                 if not isinstance(df, pd.DataFrame):
-                    raise TypeError(f"Feature engineering function '{feat}' returned a non-DataFrame object (type: {type(df)}).")
+                    raise TypeError(f"Function '{feat}' did not return a DataFrame. Got {type(df)}")
+                
+                all_windows_applied.extend(valid_windows)
+            
+            # --- Store max window ---
 
             if all_windows_applied:
-                st.session_state.max_calculated_feature_window = max(st.session_state.max_calculated_feature_window, max(all_windows_applied))
+                st.session_state.max_calculated_feature_window = max(
+                    st.session_state.max_calculated_feature_window,
+                    max(all_windows_applied)
+                )
             else:
-                st.session_state.max_calculated_feature_window = max(st.session_state.max_calculated_feature_window, 1)
+                st.session_state.max_calculated_feature_window = max(
+                    st.session_state.max_calculated_feature_window,
+                    1
+                )
 
-            st.info(f"Calculated Max Feature Window (from applied features): {st.session_state.max_calculated_feature_window}")
+        st.session_state.df_loaded = df
+        st.success("✅ Data loaded and features applied!")
+
+    except Exception as e:
+        st.error(f"❌ Error loading data: {e}")
+
+
+        st.info(f"Calculated Max Feature Window (from applied features): {st.session_state.max_calculated_feature_window}")
 
         st.subheader("🧹 Handling Missing Values and Infinite Values...")
 
