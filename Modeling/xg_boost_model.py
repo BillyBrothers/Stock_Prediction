@@ -5,7 +5,7 @@ from sklearn.model_selection import TimeSeriesSplit, GridSearchCV # NEW: Import 
 from sklearn.metrics import mean_squared_error
 from xgboost import XGBRegressor
 
-def run_xgb_forecast(msft_df, target_col='Close', n_splits=5):
+def run_xgb_forecast(msft_df, target_col='Close', n_splits=3):
     """
     Runs an XGBoost time series forecast with hyperparameter tuning using GridSearchCV
     and walk-forward validation.

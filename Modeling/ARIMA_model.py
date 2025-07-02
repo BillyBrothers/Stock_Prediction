@@ -5,7 +5,7 @@ from pmdarima import auto_arima
 from statsmodels.tsa.arima.model import ARIMA
 import warnings
 
-def run_arima_forecast(msft_df, target_col='Close', n_splits=100):
+def run_arima_forecast(msft_df, target_col='Close', n_splits=3):
     """
     Runs an ARIMA time series forecast with hyperparameter tuning via auto_arima
     and walk-forward validation.

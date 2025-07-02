@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import mean_squared_error
 
-def run_naive_forecast(msft_df, target_col='Close', n_splits=100):
+def run_naive_forecast(msft_df, target_col='Close', n_splits=3):
     X = msft_df.drop(columns=[target_col])
     y = msft_df[target_col]
 

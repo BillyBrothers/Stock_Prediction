@@ -16,7 +16,7 @@ def create_sequences(X, y, window_size):
         ys.append(y[i])
     return np.array(Xs), np.array(ys)
 
-def run_lstm_forecast(msft_df, target_col='Close', window_size=35, n_splits=2):
+def run_lstm_forecast(msft_df, target_col='Close', window_size=35, n_splits=3):
     # Feature/Target split
     X = msft_df.drop(columns=[target_col])
     y = msft_df[target_col]
