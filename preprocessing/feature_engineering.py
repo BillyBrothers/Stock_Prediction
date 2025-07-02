@@ -33,8 +33,6 @@ def add_lag_prices(df: pd.DataFrame, columns=None, lag_periods=None):
 
     return df
 
-
-
 def add_lagged_returns(df: pd.DataFrame, columns=None, frequency="hourly", lags=None) -> pd.DataFrame:
     """
     Adds lagged percentage returns for specified columns and frequencies,
@@ -82,7 +80,6 @@ def add_lagged_returns(df: pd.DataFrame, columns=None, frequency="hourly", lags=
             df[f"{return_col}_lag_{lag}{label}"] = df[return_col].shift(lag)
 
     return df
-
 
 import pandas as pd
 import numpy as np
@@ -329,9 +326,6 @@ def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
     df = pd.get_dummies(df, columns=['Month'], prefix='Month', drop_first=False)
 
     return df
-
-
-from ta.volume import OnBalanceVolumeIndicator
 
 def add_volume_features(
     df: pd.DataFrame,
