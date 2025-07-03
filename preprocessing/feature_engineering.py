@@ -262,7 +262,6 @@ def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
     # --- ADX (window=14) ---
     
-    
     if 14 < n_rows:
         print(f"Checking ADX... len={len(df)}")
         try:

@@ -23,7 +23,7 @@ def handle_infinite_values(df):
     numeric_cols = df_copy.select_dtypes(include=np.number).columns
 
     # Check for infinite values ONLY in numeric columns
-    if not numeric_cols.empty and np.isinf(df_copy[numeric_cols]).any().any(): # Added an extra .any() for the check
+    if not numeric_cols.empty and np.isinf(df_copy[numeric_cols]).any().any(): 
         print("Infinite values detected in numeric columns. Replacing with NaN and imputing...")
         # Replace infinite values with NaN in numeric columns only
         df_copy[numeric_cols] = df_copy[numeric_cols].replace([np.inf, -np.inf], np.nan)
