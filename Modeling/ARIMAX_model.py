@@ -6,7 +6,7 @@ from statsmodels.tsa.arima.model import ARIMA
 from pmdarima import auto_arima
 import warnings
 
-def run_arimax_forecast(msft_df, target_col='Close', n_splits=3):
+def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
     """
     Runs an ARIMAX time series forecast with hyperparameter tuning via auto_arima
     and walk-forward validation.
@@ -63,42 +63,43 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=3):
     actual_values, predicted_values = [], []
 
     for i, (train_idx, test_idx) in enumerate(tscv.split(msft_df)):
-        print(f"\n--- Split {i+1}/{n_splits} ---") 
 
-        X_train_original, X_test_original = X_floats.iloc[train_idx], X_floats.iloc[test_idx]
-        y_train_original, y_test_original = y.iloc[train_idx], y.iloc[test_idx]
+        print("Fold", i)
+    
+        X_train, X_test = X_floats.iloc[train_idx], X_floats.iloc[test_idx]
+        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
-        if len(y_train_original) <= best_d:
-            warnings.warn(f"Training data length ({len(y_train_original)}) is too short for differencing order d={best_d}. Skipping this split.")
+        if len(y_train) <= best_d:
+            warnings.warn(f"Training data length ({len(y_train)}) is too short for differencing order d={best_d}. Skipping this split.")
             continue
 
         if best_d > 0:
-            y_train_differenced = y_train_original.diff(periods=best_d).dropna()
+            y_train_differenced = y_train.diff(periods=best_d).dropna()
         else:
-            y_train_differenced = y_train_original
+            y_train_differenced = y_train
 
         
         if best_d > 0:
-            X_train_differenced = X_train_original.diff(periods=best_d).dropna()
+            X_train_differenced = X_train.diff(periods=best_d).dropna()
         else:
-            X_train_differenced = X_train_original
+            X_train_differenced = X_train
 
         
         if len(y_train_differenced) != len(X_train_differenced):
-            warnings.warn(f"Length mismatch after differencing: y_train_differenced ({len(y_train_differenced)}) vs X_train_differenced ({len(X_train_differenced)}). This might cause issues.")
+            warnings.warn(f"Length mismatch after differencing: y_train_differenced ({len(y_train_differenced)}) vs X_train_differenced ({len(X_train_differenced)})")
 
-        # Ensure X_train_original has enough data for the differencing order for exog_forecast
-        if X_train_original.empty:
+       # Ensure X_train_original has enough data for the differencing order for exog_forecast
+        if X_train.empty:
             warnings.warn(f"X_train_original is empty for split {i+1}. Skipping this split.")
             continue
 
         if best_d > 0:
-            if len(X_train_original) < best_d + 1:
-                warnings.warn(f"X_train_original is too short ({len(X_train_original)}) for differencing order d={best_d} for exog_forecast. Skipping this split.")
+            if len(X_train) < best_d + 1:
+                warnings.warn(f"X_train_original is too short ({len(X_train)}) for differencing order d={best_d} for exog_forecast. Skipping this split.")
                 continue
             
-            # The last (best_d + 1) points of X_train_original are needed to compute the 'd'th difference for X_{k-1}
-            exog_for_diff_calc = X_train_original.iloc[-(best_d + 1):]
+            # The last (best_d + 1) points of X_train_original are needed to compute the 'd'th difference for X_k-1
+            exog_for_diff_calc = X_train.iloc[-(best_d + 1):]
             exog_forecast = exog_for_diff_calc.diff(periods=best_d).iloc[[-1]]
 
             if exog_forecast.empty: 
@@ -106,7 +107,7 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=3):
                 continue
 
         else: 
-            exog_forecast = X_train_original.iloc[[-1]] 
+            exog_forecast = X_train.iloc[[-1]] 
 
         if y_train_differenced.empty or X_train_differenced.empty:
             warnings.warn("Differenced training data (y or X) became empty. Skipping this split.")
@@ -116,27 +117,30 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=3):
             model = ARIMA(endog=y_train_differenced, exog=X_train_differenced, order=(best_p, 0, best_q))
             model_fit = model.fit()
 
+            # using the last known differenced value of X to predict the next differenced value of y. 
+
             forecast_diff_series = model_fit.forecast(steps=1, exog=exog_forecast)
             forecast_diff_value = forecast_diff_series.iloc[0]
 
-            print(f"   y_train_original.iloc[-1]: {y_train_original.iloc[-1]:.8f}") 
+            print(f"   y_train_original.iloc[-1]: {y_train.iloc[-1]:.8f}") 
             print(f"   Forecasted difference (forecast_diff_value): {forecast_diff_value:.8f}") 
 
-            
+        # Taking  the last known values of y, add the predicted change, and reconstruct the next value. 
+        # This process is inverse transforming the data back to original scale from differenced to absolute price.
             predicted_level = None
             if best_d > 0:
-                last_original_y_values = y_train_original.iloc[-best_d:]
+                last_original_y_values = y_train.iloc[-best_d:]
                 temp_series_for_inverse = np.concatenate([
-                    last_original_y_values.values,
-                    np.array([forecast_diff_value])
+                    last_original_y_values.values, # taking the known values of y 
+                    np.array([forecast_diff_value]) # the predicted differenced price 
                 ])
-                predicted_level = np.cumsum(temp_series_for_inverse)[-1]
+                predicted_level = np.cumsum(temp_series_for_inverse)[-1] # summing them and then taking the last value
             else:
                 predicted_level = forecast_diff_value
 
-            print(f"   Actual value (y_test.iloc[0]): {y_test_original.iloc[0]:.8f}")
+            print(f"   Actual value (y_test.iloc[0]): {y_test.iloc[0]:.8f}")
             print(f"   Predicted level (after inverse transform): {predicted_level:.8f}") 
-            actual_values.append(y_test_original.iloc[0])
+            actual_values.append(y_test.iloc[0])
             predicted_values.append(predicted_level)
 
         except Exception as e:
@@ -150,10 +154,6 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=3):
     print(f"\nFinal ARIMAX MSE: {mse}") 
 
 
-    results_df = pd.DataFrame({
-        'Metric': ['Mean Squared Error', 'ARIMAX Order (p, d, q)'],
-        'Value': [mse, str((best_p, best_d, best_q))]
-    })
-
+    results_df = pd.DataFrame({"Actual_Vs_Predicted": [mse], "ARIMA_Order": [f"({best_p},{best_d},{best_q})"]})
 
     return results_df, actual_values, predicted_values, (best_p, best_d, best_q)

@@ -1,10 +1,33 @@
 import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import mean_squared_error
+import streamlit as st
 
-def run_naive_forecast(msft_df, target_col='Close', n_splits=3):
+def run_naive_forecast(msft_df, target_col='Close', n_splits=100):
+    """
+    Runs a naive model with walk forward validation.
+
+    Parameters:
+        msft_df (pd.DataFrame): DataFrame containing the target_col.
+        target_col (str): The name of the target column (e.g., 'Close').
+        n_splits (int): Number of splits for TimeSeriesSplit cross-validation.
+
+    Returns:
+        tuple: A tuple containing:
+            - pd.DataFrame: DataFrame with the ARIMAX Mean Squared Error and Order.
+            - list: List of actual values for the first step of each test split.
+            - list: List of predicted values for the first step of each test split.
+            - tuple: The (p,d,q) order found by auto_arima.
+    
+    """
+
+    if len(msft_df) < n_splits + 1: 
+        raise ValueError(f"Not enough data points ({len(msft_df)}) for {n_splits} splits. Consider reducing n_splits or providing more data.")
+
+
     X = msft_df.drop(columns=[target_col])
     y = msft_df[target_col]
+
 
     tscv = TimeSeriesSplit(n_splits=n_splits)
     actual_values, naive_predictions = [], []
@@ -19,5 +42,5 @@ def run_naive_forecast(msft_df, target_col='Close', n_splits=3):
         naive_predictions.append(next_actual)
 
     mse = mean_squared_error(actual_values, naive_predictions)
-    results_df = pd.DataFrame({"Actual_vs_Predicted_MSE": [mse]})
+    results_df = pd.DataFrame({"Actual_Vs_Predicted": [mse]})
     return results_df, actual_values, naive_predictions

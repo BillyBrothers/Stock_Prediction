@@ -5,7 +5,7 @@ from pmdarima import auto_arima
 from statsmodels.tsa.arima.model import ARIMA
 import warnings
 
-def run_arima_forecast(msft_df, target_col='Close', n_splits=3):
+def run_arima_forecast(msft_df, target_col='Close', n_splits=100):
     """
     Runs an ARIMA time series forecast with hyperparameter tuning via auto_arima
     and walk-forward validation.
@@ -24,7 +24,7 @@ def run_arima_forecast(msft_df, target_col='Close', n_splits=3):
     """
     y = msft_df[target_col]
 
-    # Suppress specific statsmodels warnings that can be verbose during fitting
+    # Suppress specific statsmodels warnings 
     warnings.filterwarnings("ignore", category=UserWarning, module="statsmodels")
     warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -62,8 +62,7 @@ def run_arima_forecast(msft_df, target_col='Close', n_splits=3):
         predicted_values.append(forecast.values[0])
 
     mse = mean_squared_error(actual_values, predicted_values)
-    # MODIFIED: Include ARIMA_Order in results_df
-    results_df = pd.DataFrame({"ARIMA_MSE": [mse], "ARIMA_Order": [f"({best_p},{best_d},{best_q})"]})
+    
+    results_df = pd.DataFrame({"Actual_Vs_Predicted": [mse], "ARIMA_Order": [f"({best_p},{best_d},{best_q})"]})
 
-    # MODIFIED: Return the order as the fourth item in the tuple
     return results_df, actual_values, predicted_values, (best_p, best_d, best_q)

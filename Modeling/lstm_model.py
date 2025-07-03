@@ -16,7 +16,7 @@ def create_sequences(X, y, window_size):
         ys.append(y[i])
     return np.array(Xs), np.array(ys)
 
-def run_lstm_forecast(msft_df, target_col='Close', window_size=35, n_splits=3):
+def run_lstm_forecast(msft_df, target_col='Close', window_size=1, n_splits=100):
     # Feature/Target split
     X = msft_df.drop(columns=[target_col])
     y = msft_df[target_col]
@@ -53,10 +53,14 @@ def run_lstm_forecast(msft_df, target_col='Close', window_size=35, n_splits=3):
         model.compile(optimizer='adam', loss='mean_squared_error')
         model.fit(X_train, y_train, epochs=100, batch_size=25, validation_split=0.2, callbacks=[early_stopping])
 
-        y_pred = model.predict(X_test[:1])
-        actual_values.append(y_test[0])
-        predicted_values.append(y_pred[0][0])
+        y_pred_scaled = model.predict(X_test[:1])
+        
+        y_actual = y_scaler.inverse_transform(y_test[:1].reshape(-1, 1))[0][0]
+        y_pred = y_scaler.inverse_transform(y_pred_scaled)[0][0]
+
+        actual_values.append(y_actual)
+        predicted_values.append(y_pred)
 
     mse = mean_squared_error(actual_values, predicted_values)
-    results_df = pd.DataFrame({"Actual_vs_Predicted_MSE": [mse]})
+    results_df = pd.DataFrame({"Actual_Vs_Predicted": [mse]})
     return results_df, actual_values, predicted_values
