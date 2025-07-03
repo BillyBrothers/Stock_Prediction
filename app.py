@@ -348,11 +348,7 @@ else:
     for model_name, results in st.session_state.model_results.items():
         st.markdown(f"---")
         st.write(f"### {model_name} Results:")
-        st.dataframe(results['results_df'])
-
-        # Display best parameters if available
-        if 'params' in results and results['params']:
-            st.write(f"**Best Parameters**: `{results['params']}`")
+        st.dataframe(results['results_df']['Actual_Vs_Predicted'])
 
         if results['actual_values'] and results['predicted_values']:
             st.write(f"### {model_name} Forecast: Actual vs Predicted (First Point of Each Test Split)")
@@ -362,9 +358,9 @@ else:
             ax.plot(range(len(results['actual_values'])), results['actual_values'], color='blue', linestyle='--', alpha=0.5, label='Actual (Connects Points)')
             ax.plot(range(len(results['predicted_values'])), results['predicted_values'], color=results['plot_color'], linestyle=':', alpha=0.5, label='Predicted (Connects Points)')
 
-            title_suffix = f" (Order: {results['params']})" if model_name in ["ARIMA Model", "ARIMAX Model"] else \
-                           f" (Best Params: {results['params']})" if model_name == "XGBoost Model" else \
-                           f" (Window Size: {results['params']})" if model_name == "LSTM Model" else ""
+            title_suffix = f" (Order: {results['params']})" if model_name in ["ARIMA Model", "ARIMAX Model"] else ""
+                           #f" (Best Params: {results['params']})" if model_name == "XGBoost Model" else \
+                           #f" (Window Size: {results['params']})" if model_name == "LSTM Model" else ""
             ax.set_title(f'{model_name} Forecast{title_suffix}: Actual vs. Predicted per TimeSeriesSplit Fold')
             ax.set_xlabel('Forecast Fold Index')
             ax.set_ylabel('Stock Price')
@@ -443,5 +439,5 @@ if st.sidebar.button("Predict", key="sidebar_predict_button"):
         except Exception as e:
             st.error(f"Error running {selected_model} model: {e}")
             st.exception(e) 
-st.sidebar.markdown("---") # End of sidebar
+st.sidebar.markdown("---")
 
