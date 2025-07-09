@@ -30,7 +30,7 @@ from Modeling.base_model import run_naive_forecast
 from Modeling.ARIMA_model import run_arima_forecast
 from Modeling.ARIMAX_model import run_arimax_forecast
 from Modeling.xg_boost_model import run_xgb_forecast
-from Modeling.lstm_model import run_lstm_forecast # Import LSTM model
+from Modeling.lstm_model import run_lstm_forecast
 
 # --- Feature Registry ---
 FEATURE_FUNCTIONS = {
@@ -169,10 +169,16 @@ if st.sidebar.button("Load Data"):
                         df = func(df, windows=valid_windows)
                     elif feat == "Rolling Std Dev":
                         df = func(df, windows=valid_windows, target_col='Close')
+                    elif feat == "Lag Prices":
+                        df = func(df, windows=valid_windows)
+                    elif feat == "Lagged Returns":
+                        df = func(df, lags=valid_windows)
                     elif feat == "Volume Features":
                         df = func(df, volume_sma_windows=valid_windows)
                     else:
                         df = func(df)
+
+
 
                     #st.write(f"✅ Finished applying '{feat}' — new shape: {df.shape}")
                 except Exception as e:
