@@ -247,8 +247,7 @@ def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
     # --- ADX (window=14) ---
     
-    if 14 < n_rows:
-        print(f"Checking ADX... len={len(df)}")
+    if 14 in windows and 14 < n_rows:
         try:
             adx = ADXIndicator(high=df['High'], low=df['Low'], close=df['Close'], window=14)
             df['ADX_14'] = adx.adx().reindex(df.index)
@@ -256,14 +255,12 @@ def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
             df['Negative_DI'] = adx.adx_neg().reindex(df.index)
             df['Trend_Strong_ADX'] = (df['ADX_14'].fillna(0) > 25).astype(int)
             applied.extend(['ADX_14', 'Positive_DI', 'Negative_DI', 'Trend_Strong_ADX'])
-            print("✅ ADX indicators applied successfully.")
         except Exception as e:
-            print(f"X ADX error: {e}")
-            skipped.append("ADX_14")
+            skipped.append(f"ADX (Error: {e})")
 
     # --- Summary ---
     print(f"✅ Applied indicators: {applied}")
-    print(f"⚠️ Skipped due to short data: {skipped}")
+    print(f"⚠️ Skipped due to data limits or config: {skipped}")
     return df
 
 def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
