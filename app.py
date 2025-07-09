@@ -280,10 +280,10 @@ if 'df' in locals():
 #st.markdown("---")
 
 # +Calculate remaining NaNs after imputation function ---
-# if 'df' in locals():
-#     remaining_nans_after_imputation = df.isna().sum().sum()
-# else:
-#     remaining_nans_after_imputation = 0
+if 'df' in locals():
+    remaining_nans_after_imputation = df.isna().sum().sum()
+else:
+    remaining_nans_after_imputation = 0
 #st.write(f"Remaining NaNs after imputation function: **{remaining_nans_after_imputation}**")
 #if remaining_nans_after_imputation > 0 and 'df' in locals():
     #st.write("    Columns still with NaNs after imputation:")
@@ -295,7 +295,10 @@ if 'df' in locals():
 #st.markdown("---")
 
 # If there are remaining NaNs, drop those rows ---
-final_df = df.copy() if 'df' in locals() else None # Work on a copy for this final step if needed
+if 'df' in locals():
+    final_df = df.copy()
+else: 
+    None # Work on a copy for this final step if needed
 if final_df is not None and remaining_nans_after_imputation > 0:
     #st.write(" NaNs still remain after imputation. Dropping rows with any remaining NaNs...")
     rows_before_final_drop = len(final_df)
@@ -324,7 +327,6 @@ if final_df is not None:
             #st.dataframe(final_df.isna().sum()[final_df.isna().sum() > 0])
         #if final_infinity_count > 0:
             #st.dataframe(np.isinf(final_df).sum()[np.isinf(final_df).sum() > 0])
-
 
     #engineered_cols = [col for col in final_df.columns if col not in ['Open', 'High', 'Low', 'Close', 'Volume']]
     #if engineered_cols:
