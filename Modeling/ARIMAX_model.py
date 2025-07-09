@@ -56,8 +56,7 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
         suppress_warnings=True,
         stepwise=False
     )
-    best_p, best_d, best_q = arimax_hypertuned.order
-    print(f"\nAuto_arima determined order: (p={best_p}, d={best_d}, q={best_q})") 
+    best_p, best_d, best_q = arimax_hypertuned.order 
 
     tscv = TimeSeriesSplit(n_splits=n_splits)
     actual_values, predicted_values = [], []
@@ -99,8 +98,8 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
                 continue
             
             # The last (best_d + 1) points of X_train_original are needed to compute the 'd'th difference for X_k-1
-            exog_for_diff_calc = X_train.iloc[-(best_d + 1):]
-            exog_forecast = exog_for_diff_calc.diff(periods=best_d).iloc[[-1]]
+            exog_for_diff_calc = X_train.iloc[-(best_d + 1):] # returns a sliced dataframe composed of the last 2 rows of each exogenous variable for each fold based on best_d size.
+            exog_forecast = exog_for_diff_calc.diff(periods=best_d).iloc[[-1]] # applies differencing indepedently for each column and then selects the last row because the first row will be a nan due to the nature of differncing with only containing two rows. 
 
             if exog_forecast.empty: 
                 warnings.warn(f"Differenced exog_forecast became empty for split {i+1} despite enough data. Skipping this split.")
@@ -114,7 +113,7 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
             continue
 
         try:
-            model = ARIMA(endog=y_train_differenced, exog=X_train_differenced, order=(best_p, 0, best_q))
+            model = ARIMA(endog=y_train_differenced, exog=X_train_differenced, order=(best_p, 0, best_q)) # we've already manually differenced earlier, so d is set to 0. 
             model_fit = model.fit()
 
             # using the last known differenced value of X to predict the next differenced value of y. 

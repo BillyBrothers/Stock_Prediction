@@ -54,12 +54,16 @@ def run_arima_forecast(msft_df, target_col='Close', n_splits=100):
     for train_idx, test_idx in tscv.split(msft_df):
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
+        if len(y_train) <= best_d:
+            warnings.warn(f"Training data length ({len(y_train)}) is too short for differencing order d={best_d}. Skipping this split.")
+            continue
+
         model = ARIMA(y_train, order=(best_p, best_d, best_q))
         model_fit = model.fit()
-        forecast = model_fit.forecast(steps=1)
+        forecast = model_fit.forecast(steps=1) # returns a 1d array of the single predicted value based on the prior training data
 
         actual_values.append(y_test.iloc[0])
-        predicted_values.append(forecast.values[0])
+        predicted_values.append(forecast.values[0]) # forecast[0] would work because its a 1d numpy array, but forecast.values[0] is a robust approach in the event it was a pandas series.
 
     mse = mean_squared_error(actual_values, predicted_values)
     
