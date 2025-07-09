@@ -280,10 +280,10 @@ if 'df' in locals():
 #st.markdown("---")
 
 # +Calculate remaining NaNs after imputation function ---
-if 'df' in locals():
-    remaining_nans_after_imputation = df.isna().sum().sum()
-else:
-    remaining_nans_after_imputation = 0
+# if 'df' in locals():
+#     remaining_nans_after_imputation = df.isna().sum().sum()
+# else:
+#     remaining_nans_after_imputation = 0
 #st.write(f"Remaining NaNs after imputation function: **{remaining_nans_after_imputation}**")
 #if remaining_nans_after_imputation > 0 and 'df' in locals():
     #st.write("    Columns still with NaNs after imputation:")
