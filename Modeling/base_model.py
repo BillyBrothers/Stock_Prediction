@@ -14,7 +14,7 @@ def run_naive_forecast(msft_df, target_col='Close', n_splits=100):
 
     Returns:
         tuple: A tuple containing:
-            - pd.DataFrame: DataFrame with the ARIMAX Mean Squared Error and Order.
+            - pd.DataFrame: DataFrame with the Naive Mean Squared Error and Order.
             - list: List of actual values for the first step of each test split.
             - list: List of predicted values for the first step of each test split.
             - tuple: The (p,d,q) order found by auto_arima.
