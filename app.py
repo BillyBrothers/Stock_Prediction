@@ -253,7 +253,10 @@ if largest_window_size > 0 and 'df' in locals():
     # st.info("No rows trimmed as max window size is 0 or data not loaded.")
 
 # --- Calculate remaining NaNs after window size trimming (Part of previous step) ---
-remaining_nans_after_trimming = df.isna().sum().sum() if 'df' in locals() else 0
+if 'df' in locals():
+    remaining_nans_after_trimming = df.isna().sum().sum()
+else:
+    0
 #st.write(f"    Remaining NaNs after trimming rows: **{remaining_nans_after_trimming}**")
 if 'df' in locals():
     nan_cols_after_trimming = df.columns[df.isna().any()]
