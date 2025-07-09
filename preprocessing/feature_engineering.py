@@ -203,15 +203,13 @@ def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
             skipped.append(f'ATR_{period}')
 
     # --- RSI (requires window=14) ---
-    if 14 < n_rows:
+    if 14 in windows and 14 < n_rows:
         rsi = RSIIndicator(close=df['Close'], window=14)
         df['RSI_14'] = rsi.rsi()
         df['RSI_Overbought'] = (df['RSI_14'] > 70).astype(int)
         df['RSI_Oversold'] = (df['RSI_14'] < 30).astype(int)
         df['RSI_x_Volume'] = df['RSI_14'] * df['Volume']
         applied.append("RSI_14")
-    else:
-        skipped.append("RSI_14")
 
     # --- MACD (requires 26, 12, 9) ---
     if all(w < n_rows for w in [26, 12, 9]):
