@@ -191,15 +191,10 @@ def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
     skipped = []
 
     if windows is None:
-        windows = [5,7,10,14,21] # default 
+        windows = [5,7,10,14,21] # fallback default 
 
-    n_rows = len(df)
-    if n_rows < 10:
-        print(f"⚠️ Only {n_rows} rows available — skipping all indicators.")
-        return dfgit 
-
-    # --- ATR ---
-    for period in [5, 7, 10, 14, 21]:
+     # --- ATR ---
+    for period in windows:
         if period < n_rows:
             atr = AverageTrueRange(high=df['High'], low=df['Low'], close=df['Close'], window=period)
             df[f'ATR_{period}'] = atr.average_true_range()
