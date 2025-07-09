@@ -86,7 +86,6 @@ if 'df_loaded' not in st.session_state:
 if 'max_calculated_feature_window' not in st.session_state:
     st.session_state.max_calculated_feature_window = 1
 
-
 if 'model_results' not in st.session_state:
     st.session_state.model_results = {}
 
@@ -175,10 +174,10 @@ if st.sidebar.button("Load Data"):
                         df = func(df, lags=valid_windows)
                     elif feat == "Volume Features":
                         df = func(df, volume_sma_windows=valid_windows)
+                    elif feat == "Technical Indicators":
+                        df = func(df, windows=valid_windows)
                     else:
                         df = func(df)
-
-
 
                     #st.write(f"✅ Finished applying '{feat}' — new shape: {df.shape}")
                 except Exception as e:
@@ -220,7 +219,10 @@ if df.empty:
 #st.subheader("🧹 Handling Missing Values and Infinite Values...")
 
 # --- Check and Replace Infinity Values ---
-infinity_count_before_replace = np.isinf(df).sum().sum() if 'df' in locals() else 0
+if 'df' in locals(): 
+    infinity_count_before_replace = np.isinf(df).sum().sum()
+else:
+    infinity_count_before_replace = 0
 #st.write(f"Infinity values found (before replacement): **{infinity_count_before_replace}**")
 if infinity_count_before_replace > 0:
     #st.write("Columns with infinity values:")
@@ -230,7 +232,10 @@ if infinity_count_before_replace > 0:
     #st.write(f"Total Infinity values after replacement: **{np.isinf(df).sum().sum()}**") # Should be 0
 
 # Calculate NaNs after feature engineering (and infinity replacement) ---
-nans_after_feat_eng = df.isna().sum().sum() if 'df' in locals() else 0
+if 'df' in locals():
+    nans_after_feat_eng = df.isna().sum().sum()
+else:
+    0
 # st.write(f"1. Total NaNs after feature engineering (and infinity conversion): **{nans_after_feat_eng}**")
 #if 'df' in locals():
     #st.write("    Columns with NaNs (and their counts) at this stage:")

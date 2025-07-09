@@ -170,7 +170,7 @@ def compute_rolling_stddev(
 
     return df
 
-def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
+def add_technical_indicators(df: pd.DataFrame, windows = None) -> pd.DataFrame:
     """
     Enhances a financial DataFrame with multiple technical indicators,
     automatically skipping invalid window sizes based on available data.
