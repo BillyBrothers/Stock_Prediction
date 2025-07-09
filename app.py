@@ -232,10 +232,10 @@ if infinity_count_before_replace > 0:
     #st.write(f"Total Infinity values after replacement: **{np.isinf(df).sum().sum()}**") # Should be 0
 
 # Calculate NaNs after feature engineering (and infinity replacement) ---
-if 'df' in locals():
-    nans_after_feat_eng = df.isna().sum().sum()
-else:
-    0
+# if 'df' in locals():
+#     nans_after_feat_eng = df.isna().sum().sum()
+# else:
+#     0
 # st.write(f"1. Total NaNs after feature engineering (and infinity conversion): **{nans_after_feat_eng}**")
 #if 'df' in locals():
     #st.write("    Columns with NaNs (and their counts) at this stage:")
@@ -280,7 +280,10 @@ if 'df' in locals():
 #st.markdown("---")
 
 # +Calculate remaining NaNs after imputation function ---
-remaining_nans_after_imputation = df.isna().sum().sum() if 'df' in locals() else 0
+if 'df' in locals():
+    remaining_nans_after_imputation = df.isna().sum().sum()
+else:
+    remaining_nans_after_imputation = 0
 #st.write(f"Remaining NaNs after imputation function: **{remaining_nans_after_imputation}**")
 #if remaining_nans_after_imputation > 0 and 'df' in locals():
     #st.write("    Columns still with NaNs after imputation:")
