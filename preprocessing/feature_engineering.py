@@ -233,22 +233,17 @@ def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
         df['Bollinger_PercentageB'] = bb.bollinger_pband()
         df['Price_Above_Upper_BB'] = (df['Close'] > df['Bollinger_Upper']).astype(int)
         df['Price_Below_Lower_BB'] = (df['Close'] < df['Bollinger_Lower']).astype(int)
-        applied.extend(['Bollinger_Bands'])
-        
+        applied.append('Bollinger_Bands')
+
     # --- Stochastic Oscillator (requires 14 and 3) ---
-    if all(w < n_rows for w in [14, 3]):
+    if all(w in windows and w < n_rows for w in [14, 3]):
         try:
             stoch = StochasticOscillator(high=df['High'], low=df['Low'], close=df['Close'], window=14, smooth_window=3)
-            k = stoch.stoch()
-            print("Stoch %K shape:", k.shape)
-            df['%K'] = k
             df['%K'] = stoch.stoch()
             df['%D'] = stoch.stoch_signal()
             applied.extend(['Stochastic_%K', 'Stochastic_%D'])
         except Exception as e:
-            print(f"X stoch error: {e}")
-    else:
-        skipped.append("Stochastic_Oscillator")
+            skipped.append(f"Stochastic_Oscillator (Error: {e})")
 
     # --- ADX (window=14) ---
     
