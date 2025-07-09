@@ -186,13 +186,17 @@ def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
     from ta.trend import MACD, ADXIndicator
 
     df = df.copy()
+    n_rows = len(df)
     applied = []
     skipped = []
+
+    if windows is None:
+        windows = [5,7,10,14,21] # default 
 
     n_rows = len(df)
     if n_rows < 10:
         print(f"⚠️ Only {n_rows} rows available — skipping all indicators.")
-        return df
+        return dfgit 
 
     # --- ATR ---
     for period in [5, 7, 10, 14, 21]:
