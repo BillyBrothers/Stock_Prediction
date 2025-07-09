@@ -212,24 +212,19 @@ def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
         applied.append("RSI_14")
 
     # --- MACD (requires 26, 12, 9) ---
-    if all(w < n_rows for w in [26, 12, 9]):
+    if all(w in windows and w < n_rows for w in [26, 12, 9]):
         macd = MACD(close=df['Close'], window_slow=26, window_fast=12, window_sign=9)
         df['MACD'] = macd.macd()
         df['MACD_Signal'] = macd.macd_signal()
         df['MACD_Histogram'] = macd.macd_diff()
-
         df['MACD_Prev'] = df['MACD'].shift(1).fillna(method='bfill')
         df['MACD_Signal_Prev'] = df['MACD_Signal'].shift(1).fillna(method='bfill')
-
         df['MACD_Cross_Up'] = ((df['MACD'] > df['MACD_Signal']) & (df['MACD_Prev'] <= df['MACD_Signal_Prev'])).astype(int)
         df['MACD_Cross_Down'] = ((df['MACD'] < df['MACD_Signal']) & (df['MACD_Prev'] >= df['MACD_Signal_Prev'])).astype(int)
-
         applied.extend(['MACD', 'MACD_Signal', 'MACD_Cross_Up', 'MACD_Cross_Down'])
-    else:
-        skipped.extend(['MACD', 'MACD_Signal'])
 
     # --- Bollinger Bands (window=2) ---
-    if 2 < n_rows:
+    if 2 in windows and 2 < n_rows:
         bb = BollingerBands(close=df['Close'], window=2, window_dev=2)
         df['Bollinger_Lower'] = bb.bollinger_lband()
         df['Bollinger_Upper'] = bb.bollinger_hband()
@@ -239,9 +234,7 @@ def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
         df['Price_Above_Upper_BB'] = (df['Close'] > df['Bollinger_Upper']).astype(int)
         df['Price_Below_Lower_BB'] = (df['Close'] < df['Bollinger_Lower']).astype(int)
         applied.extend(['Bollinger_Bands'])
-    else:
-        skipped.append("Bollinger_Bands")
-
+        
     # --- Stochastic Oscillator (requires 14 and 3) ---
     if all(w < n_rows for w in [14, 3]):
         try:
