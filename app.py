@@ -170,7 +170,7 @@ if st.sidebar.button("Load Data"):
                     elif feat == "Rolling Std Dev":
                         df = func(df, windows=valid_windows, target_col='Close')
                     elif feat == "Lag Prices":
-                        df = func(df, windows=valid_windows)
+                        df = func(df, lag_periods=valid_windows)
                     elif feat == "Lagged Returns":
                         df = func(df, lags=valid_windows)
                     elif feat == "Volume Features":
