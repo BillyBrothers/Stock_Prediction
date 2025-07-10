@@ -109,7 +109,7 @@ def add_moving_averages(
     if windows is None:
         windows = [5, 7, 10, 21, 28, 35]
     if lag_periods is None:
-        lag_periods = [1]
+        lag_periods = [1, 2, 3, 4, 5, 6, 7]
 
     valid_windows = [w for w in windows if w < n_rows]
     skipped = [w for w in windows if w >= n_rows]
@@ -117,18 +117,31 @@ def add_moving_averages(
         print(f"⚠️ Skipped window sizes {skipped} due to insufficient data (only {n_rows} rows).")
 
     method = method.upper()
+    ma_cols_created = []
+
     if method == "SMA":
         for w in valid_windows:
-            df[f"SMA_{w}"] = df[column].rolling(window=w).mean()
+            base_ma_col = f"SMA{w}"
+            df[base_ma_col] = df[column].rolling(window=w).mean()
+            ma_cols_created.append(base_ma_col)
+
+            for lag in lag_periods:
+                df[f"{base_ma_col}_lag_{lag}"] = df[base_ma_col].shift(lag)
 
     elif method == "EMA":
         for w in valid_windows:
-            df[f"EMA_{w}"] = df[column].ewm(span=w, adjust=False).mean()
+            base_ma_col = f"EMA{w}"
+            df[base_ma_col] = df[column].rolling(window=w).mean()
+            ma_cols_created.append(base_ma_col)
+            
+            for lag in lag_periods:
+                df[f"{base_ma_col}_lag_{lag}"] = df[base_ma_col].shift(lag)
+
 
     elif method == "LOG":
         log_col = f"Log_{column}"
-        df[log_col] = np.log(df[column])
         for w in valid_windows:
+
             df[f"Rolling_Log_Avg_{w}"] = df[log_col].rolling(window=w).mean()
             df[f"Rolling_Log_Std_{w}"] = df[log_col].rolling(window=w).std()
 
