@@ -117,7 +117,7 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
     #         continue
 
         try:
-            model = SARIMAX(endog=y_train_differenced, exog=X_train_differenced, order=(best_p, 0, best_q), seasonal_order=(0,0,0,0)) # we've already manually differenced earlier, so d is set to 0. 
+            model = SARIMAX(endog=y_train, exog=X_train, order=(best_p, best_d, best_q), seasonal_order=(0,0,0,0)) # we've already manually differenced earlier, so d is set to 0. 
             model_fit = model.fit(disp=False)
 
             # using the last known differenced value of X to predict the next differenced value of y. 
