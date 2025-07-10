@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 def add_lag_prices(df: pd.DataFrame, columns=None, lag_periods=None):
     """
@@ -52,8 +53,8 @@ def add_lagged_returns(df: pd.DataFrame, columns=None, frequency="hourly", lags=
 
     freq_map = {
         "hourly": {"periods": 1, "label": "H", "default_lags": [1, 2, 3, 4, 5, 6]},
-        "daily": {"periods": 24, "label": "D", "default_lags": [1, 2, 3, 4, 5]},
-        "weekly": {"periods": 24 * 5, "label": "W", "default_lags": [1, 2, 3]},
+        "daily": {"periods": 7, "label": "D", "default_lags": [1, 2, 3, 4, 5]},
+        "weekly": {"periods": 7 * 5, "label": "W", "default_lags": [1, 2, 3]},
     }
 
     if frequency not in freq_map:
@@ -81,14 +82,14 @@ def add_lagged_returns(df: pd.DataFrame, columns=None, frequency="hourly", lags=
 
     return df
 
-import pandas as pd
-import numpy as np
+
 
 def add_moving_averages(
     df: pd.DataFrame,
     method: str = "SMA",
     windows: list = None,
-    column: str = "Close"
+    column: str = "Close",
+    lag_periods: list = None
 ) -> pd.DataFrame:
     """
     Adds moving average features to the DataFrame with auto-adjusted windows.
@@ -102,12 +103,13 @@ def add_moving_averages(
     Returns:
         pd.DataFrame: DataFrame with added moving average features.
     """
-    import numpy as np  # Make sure np is imported
     df = df.copy()
     n_rows = len(df)
 
     if windows is None:
         windows = [5, 7, 10, 21, 28, 35]
+    if lag_periods is None:
+        lag_periods = [1]
 
     valid_windows = [w for w in windows if w < n_rows]
     skipped = [w for w in windows if w >= n_rows]
