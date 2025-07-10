@@ -65,6 +65,9 @@ def run_arima_forecast(msft_df, target_col='Close', n_splits=100):
         model_fit = model.fit()
         forecast = model_fit.forecast(steps=1) # returns a 1d array of the single predicted value based on the prior training data
 
+        print(f"  Actual value: {y_test.iloc[0]:.8f}")
+        print(f"  Predicted level: {forecast.iloc[0]}")
+
         actual_values.append(y_test.iloc[0])
         predicted_values.append(forecast.values[0]) # forecast[0] would work because its a 1d numpy array, but forecast.values[0] is a robust approach in the event it was a pandas series.
 

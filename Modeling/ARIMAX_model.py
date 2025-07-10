@@ -126,10 +126,10 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
             forecast = model_fit.forecast(steps=1, exog=exog_forecast_input) # automatically performs differencing on exog_forecast_input and inverse transformation on forecasted value
 
             print(f"  Actual value: {y_test.iloc[0]:.8f}") 
-            print(f"  Predicted level: {forecast.iloc[0]}") 
+            print(f"  Predicted level: {forecast.values[0]}") 
 
             actual_values.append(y_test.iloc[0])
-            predicted_values.append(forecast.iloc[0])
+            predicted_values.append(forecast.values[0])
 
         # # Taking  the last known values of y, add the predicted change, and reconstruct the next value. 
         # # This process is inverse transforming the data back to original scale from differenced to absolute price.

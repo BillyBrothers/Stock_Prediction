@@ -30,11 +30,17 @@ def run_naive_forecast(msft_df, target_col='Close', n_splits=100):
     tscv = TimeSeriesSplit(n_splits=n_splits)
     actual_values, naive_predictions = [], []
 
-    for train_idx, test_idx in tscv.split(X):
+    for i, (train_idx, test_idx) in enumerate(tscv.split(X)):
+
+        print("Fold", i)
+
         y_train, y_test = y[train_idx], y[test_idx]
 
         last_known = y_train[-1]
         next_actual = y_test[0]
+
+        print("Last known value:", last_known)
+        print("Next Actual value", next_actual)
 
         actual_values.append(last_known)
         naive_predictions.append(next_actual)
