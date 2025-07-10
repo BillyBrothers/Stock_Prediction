@@ -126,8 +126,11 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
             forecast_level_series = model_fit.forecast(steps=1, exog=exog_forecast_input)
             predicted_level = forecast_level_series.iloc[0]
 
-            print(f"   y_train_original.iloc[-1]: {y_train.iloc[-1]:.8f}") 
-            print(f"   Forecasted difference (forecast_diff_value): {forecast_diff_value:.8f}") 
+            print(f"   Actual value (y_test.iloc[0]): {y_test.iloc[0]:.8f}") 
+            print(f"   Predicted level: {predicted_level:.8f}") 
+
+            actual_values.append(y_test.iloc[0])
+            predicted_values.append(predicted_level)
 
         # Taking  the last known values of y, add the predicted change, and reconstruct the next value. 
         # This process is inverse transforming the data back to original scale from differenced to absolute price.
