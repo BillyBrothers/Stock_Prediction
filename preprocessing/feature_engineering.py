@@ -162,7 +162,8 @@ def add_moving_averages(
 def compute_rolling_stddev(
     df: pd.DataFrame,
     target_col: str = "Close",
-    windows: list = None
+    windows: list = None,
+    lag_periods: list = None
 ) -> pd.DataFrame:
     """
     Computes rolling standard deviations for a list of window sizes,
@@ -181,6 +182,9 @@ def compute_rolling_stddev(
 
     if windows is None:
         windows = [7]
+    
+    if lag_periods is None:
+        lag_periods = [1,2,3,4,5,6,7]
 
     valid_windows = [w for w in windows if w < n_rows]
     skipped_windows = [w for w in windows if w >= n_rows]
@@ -189,12 +193,19 @@ def compute_rolling_stddev(
         print(f"⚠️ Skipped window sizes {skipped_windows} due to insufficient data (only {n_rows} rows).")
 
     for w in valid_windows:
-        col_name = f"Volatility_StdDEV_{target_col}_{w}"
-        df[col_name] = df[target_col].rolling(window=w).std()
+        base_stddev_col = f"Volatility_StdDev_{target_col}_{w}"
+        df[base_stddev_col] = df[target_col].rolling(window=w).std()
+        
+        for lag in lag_periods:
+            df[f"{base_stddev_col}_lag_{lag}"] = df[base_stddev_col].shift(lag)
 
     return df
 
-def add_technical_indicators(df: pd.DataFrame, windows = None) -> pd.DataFrame:
+def add_technical_indicators(
+        df: pd.DataFrame, 
+        windows: list = None,
+        lag_periods: list = None
+        ) -> pd.DataFrame:
     """
     Enhances a financial DataFrame with multiple technical indicators,
     automatically skipping invalid window sizes based on available data.
@@ -217,36 +228,83 @@ def add_technical_indicators(df: pd.DataFrame, windows = None) -> pd.DataFrame:
     if windows is None:
         windows = [5,7,10,14,21] # fallback default 
 
+    if lag_periods is None:
+        lag_periods = [1]
+
      # --- ATR ---
     for period in windows:
         if period < n_rows:
+            base_atr_col = f'ATR_{period}'
             atr = AverageTrueRange(high=df['High'], low=df['Low'], close=df['Close'], window=period)
-            df[f'ATR_{period}'] = atr.average_true_range()
-            applied.append(f'ATR_{period}')
+            df[base_atr_col] = atr.average_true_range()
+            applied.append(base_atr_col)
+
+            for lag in lag_periods:
+                df[f'{base_atr_col}_lag_{lag}'] = df[base_atr_col].shift(lag)
+
         else:
             skipped.append(f'ATR_{period}')
 
     # --- RSI (requires window=14) ---
     if 14 in windows and 14 < n_rows:
+        base_rsi_col = 'RSI_14'
         rsi = RSIIndicator(close=df['Close'], window=14)
-        df['RSI_14'] = rsi.rsi()
-        df['RSI_Overbought'] = (df['RSI_14'] > 70).astype(int)
-        df['RSI_Oversold'] = (df['RSI_14'] < 30).astype(int)
-        df['RSI_x_Volume'] = df['RSI_14'] * df['Volume']
-        applied.append("RSI_14")
+        df[base_rsi_col] = rsi.rsi()
+        applied.append(base_rsi_col)
+        for lag in lag_periods:
+            df[f'{base_rsi_col}_lag_{lag}'] = df[base_rsi_col].shift(lag)
+
+        
+        base_rsi_overbought = 'RSI_Overbought'
+        df[base_rsi_overbought] = (df[base_rsi_col] > 70).astype(int)
+        applied.append(base_rsi_overbought)
+        for lag in lag_periods:
+            df[f'{base_rsi_overbought}_lag_{lag}'] = df[base_rsi_overbought].shift(lag)
+
+        base_rsi_Oversold = 'RSI_Oversold'
+        df[base_rsi_Oversold] = (df[base_rsi_col] < 30).astype(int)
+        applied.append(base_rsi_Oversold)
+        for lag in lag_periods:
+            df[f'{base_rsi_Oversold}_lag_{lag}'] = df[base_rsi_Oversold].shift(lag)
+
+
+        base_rsi_x_volume = 'RSI_x_Volume'
+        df[base_rsi_x_volume] = df[base_rsi_col] * df['Volume']
+        applied.append(base_rsi_x_volume)
+        for lag in lag_periods:
+            df[f'{base_rsi_x_volume}_lag_{lag}'] = df[base_rsi_x_volume].shift(lag)
+
 
     # --- MACD (requires 26, 12, 9) ---
     if all(w in windows and w < n_rows for w in [26, 12, 9]):
-        macd = MACD(close=df['Close'], window_slow=26, window_fast=12, window_sign=9)
-        df['MACD'] = macd.macd()
-        df['MACD_Signal'] = macd.macd_signal()
-        df['MACD_Histogram'] = macd.macd_diff()
-        df['MACD_Prev'] = df['MACD'].shift(1).fillna(method='bfill')
-        df['MACD_Signal_Prev'] = df['MACD_Signal'].shift(1).fillna(method='bfill')
-        df['MACD_Cross_Up'] = ((df['MACD'] > df['MACD_Signal']) & (df['MACD_Prev'] <= df['MACD_Signal_Prev'])).astype(int)
-        df['MACD_Cross_Down'] = ((df['MACD'] < df['MACD_Signal']) & (df['MACD_Prev'] >= df['MACD_Signal_Prev'])).astype(int)
-        applied.extend(['MACD', 'MACD_Signal', 'MACD_Cross_Up', 'MACD_Cross_Down'])
+        base_macd_col = 'MACD'
+        base_macd_signal_col = 'MACD_Signal'
 
+        macd = MACD(close=df['Close'], window_slow=26, window_fast=12, window_sign=9)
+        df[base_macd_col] = macd.macd()
+        df[base_macd_signal_col] = macd.macd_signal()
+        applied.extend(base_macd_col, base_macd_signal_col)
+
+        for lag in lag_periods:
+            df[f'{base_macd_col}_lag_{lag}'] = df[base_macd_col].shift(lag)
+            df[f'{base_macd_signal_col}_lag_{lag}'] = df[base_macd_signal_col].shift(lag)
+        
+        df['MACD_PREV'] = df[base_macd_col].shift(1).fillna(method = "ffill")
+        df['MACD_Signal_Prev'] = df[base_macd_signal_col].shift(1).fillna(method='ffill')
+
+        base_macd_cross_up = 'MACD_Cross_Up'
+        df[base_macd_cross_up] = ((df[base_macd_col] > df[base_macd_signal_col]) & (df['MACD_Prev'] <= df['MACD_Signal_Prev'])).astype(int)
+        applied.append(base_macd_cross_up)
+
+        base_macd_cross_down = 'MACD_Cross_Down'
+        df[base_macd_cross_down] = ((df[base_macd_col] < df[base_macd_signal_col]) & (df['MACD_Prev'] >= df['MACD_Signal_Prev'])).astype(int)
+        applied.append(base_macd_cross_down)
+
+        for lag in lag_periods:
+            df[f'{base_macd_cross_up}_lag_{lag}'] = df[base_macd_cross_up].shift(lag)
+            df[f'{base_macd_cross_down}_lag_{lag}'] = df[base_macd_cross_down].shift(lag)
+
+        
     # --- Bollinger Bands (window=2) ---
     if 2 in windows and 2 < n_rows:
         bb = BollingerBands(close=df['Close'], window=2, window_dev=2)
