@@ -28,13 +28,10 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
         raise ValueError(f"Not enough data points ({len(msft_df)}) for {n_splits} splits. Consider reducing n_splits or providing more data.")
 
     
-    X = msft_df.drop(columns=[target_col])
+    X = msft_df.drop(columns=[target_col]).select_dtypes(include=np.number).astype(float)
     y = msft_df[target_col]
 
-    
-    X_floats = X.select_dtypes(include=np.number).astype(float)
-
-    if X_floats.empty:
+    if X.empty:
         raise ValueError("No numeric features found for exogenous variables (X). ARIMAX requires at least one numeric exogenous variable.")
 
     # Suppress specific statsmodels warnings
