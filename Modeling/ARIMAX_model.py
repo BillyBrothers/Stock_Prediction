@@ -73,46 +73,48 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
         # Prepare exog for forecast (this is now X_test.iloc[[0]] directly, NOT differenced)
         # This will be the *original level* of the exogenous variable for the next time step.
 
+        exog_forecast_input = X_test.iloc[[0]]
 
-        if best_d > 0:
-            y_train_differenced = y_train.diff(periods=best_d).dropna()
-        else:
-            y_train_differenced = y_train
 
-        
-        if best_d > 0:
-            X_train_differenced = X_train.diff(periods=best_d).dropna()
-        else:
-            X_train_differenced = X_train
+    #     if best_d > 0:
+    #         y_train_differenced = y_train.diff(periods=best_d).dropna()
+    #     else:
+    #         y_train_differenced = y_train
 
         
-        if len(y_train_differenced) != len(X_train_differenced):
-            warnings.warn(f"Length mismatch after differencing: y_train_differenced ({len(y_train_differenced)}) vs X_train_differenced ({len(X_train_differenced)})")
+    #     if best_d > 0:
+    #         X_train_differenced = X_train.diff(periods=best_d).dropna()
+    #     else:
+    #         X_train_differenced = X_train
 
-       # Ensure X_train_original has enough data for the differencing order for exog_forecast
-        if X_train.empty:
-            warnings.warn(f"X_train_original is empty for split {i+1}. Skipping this split.")
-            continue
+        
+    #     if len(y_train_differenced) != len(X_train_differenced):
+    #         warnings.warn(f"Length mismatch after differencing: y_train_differenced ({len(y_train_differenced)}) vs X_train_differenced ({len(X_train_differenced)})")
 
-        if best_d > 0:
-            if len(X_train) < best_d + 1:
-                warnings.warn(f"X_train_original is too short ({len(X_train)}) for differencing order d={best_d} for exog_forecast. Skipping this split.")
-                continue
+    #    # Ensure X_train_original has enough data for the differencing order for exog_forecast
+    #     if X_train.empty:
+    #         warnings.warn(f"X_train_original is empty for split {i+1}. Skipping this split.")
+    #         continue
+
+    #     if best_d > 0:
+    #         if len(X_train) < best_d + 1:
+    #             warnings.warn(f"X_train_original is too short ({len(X_train)}) for differencing order d={best_d} for exog_forecast. Skipping this split.")
+    #             continue
             
-            # The last (best_d + 1) points of X_train_original are needed to compute the 'd'th difference for X_k-1
-            exog_for_diff_calc = X_train.iloc[-(best_d + 1):] # returns a sliced dataframe composed of the last 2 rows of each exogenous variable for each fold based on best_d size.
-            exog_forecast = exog_for_diff_calc.diff(periods=best_d).iloc[[-1]] # applies differencing indepedently for each column and then selects the last row because the first row will be a nan due to the nature of differncing with only containing two rows. 
+    #         # The last (best_d + 1) points of X_train_original are needed to compute the 'd'th difference for X_k-1
+    #         exog_for_diff_calc = X_train.iloc[-(best_d + 1):] # returns a sliced dataframe composed of the last 2 rows of each exogenous variable for each fold based on best_d size.
+    #         exog_forecast = exog_for_diff_calc.diff(periods=best_d).iloc[[-1]] # applies differencing indepedently for each column and then selects the last row because the first row will be a nan due to the nature of differncing with only containing two rows. 
 
-            if exog_forecast.empty: 
-                warnings.warn(f"Differenced exog_forecast became empty for split {i+1} despite enough data. Skipping this split.")
-                continue
+    #         if exog_forecast.empty: 
+    #             warnings.warn(f"Differenced exog_forecast became empty for split {i+1} despite enough data. Skipping this split.")
+    #             continue
 
-        else: 
-            exog_forecast = X_train.iloc[[-1]] 
+    #     else: 
+    #         exog_forecast = X_train.iloc[[-1]] 
 
-        if y_train_differenced.empty or X_train_differenced.empty:
-            warnings.warn("Differenced training data (y or X) became empty. Skipping this split.")
-            continue
+    #     if y_train_differenced.empty or X_train_differenced.empty:
+    #         warnings.warn("Differenced training data (y or X) became empty. Skipping this split.")
+    #         continue
 
         try:
             model = SARIMAX(endog=y_train_differenced, exog=X_train_differenced, order=(best_p, 0, best_q), seasonal_order=(0,0,0,0)) # we've already manually differenced earlier, so d is set to 0. 
