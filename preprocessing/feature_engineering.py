@@ -140,10 +140,19 @@ def add_moving_averages(
 
     elif method == "LOG":
         log_col = f"Log_{column}"
+        df[log_col] = np.log(df[column])
         for w in valid_windows:
+            base_log_avg_col = f"Rolling_Log_Avg_{w}"
+            df[base_log_avg_col] = df[log_col].rolling(window=w).mean()
+            ma_cols_created.append(base_log_avg_col)
 
-            df[f"Rolling_Log_Avg_{w}"] = df[log_col].rolling(window=w).mean()
-            df[f"Rolling_Log_Std_{w}"] = df[log_col].rolling(window=w).std()
+            base_log_std_col = f"Rolling_Log_Std_{w}"
+            df[base_log_std_col] = df[log_col].rolling(window=w).std()
+            ma_cols_created.append(base_log_std_col)
+
+            for lag in lag_periods:
+                df[f"{base_log_avg_col}_lag_{lag}"] = df[base_log_avg_col].shift(lag)
+                df[f"{base_log_std_col}_lag_{lag}"] = df[base_log_std_col].shift(lag)
 
     else:
         raise ValueError("Invalid method. Choose from 'SMA', 'EMA', or 'LOG'.")
