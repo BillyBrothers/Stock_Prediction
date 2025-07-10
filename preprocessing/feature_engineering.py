@@ -308,22 +308,65 @@ def add_technical_indicators(
     # --- Bollinger Bands (window=2) ---
     if 2 in windows and 2 < n_rows:
         bb = BollingerBands(close=df['Close'], window=2, window_dev=2)
-        df['Bollinger_Lower'] = bb.bollinger_lband()
-        df['Bollinger_Upper'] = bb.bollinger_hband()
-        df['Bollinger_Middle'] = bb.bollinger_mavg()
-        df['Bollinger_Bandwidth'] = bb.bollinger_wband() / 100
-        df['Bollinger_PercentageB'] = bb.bollinger_pband()
-        df['Price_Above_Upper_BB'] = (df['Close'] > df['Bollinger_Upper']).astype(int)
-        df['Price_Below_Lower_BB'] = (df['Close'] < df['Bollinger_Lower']).astype(int)
-        applied.append('Bollinger_Bands')
+
+        base_bb_lower = 'Bollinger_Lower'
+        df[base_bb_lower] = bb.bollinger_lband()
+        applied.append(base_bb_lower)
+        for lag in lag_periods:
+            df[f'{base_bb_lower}_lag_{lag}'] = df[base_bb_lower].shift(lag)
+
+        base_bb_upper = 'Bollinger_Upper'
+        df[base_bb_upper] = bb.bollinger_hband()
+        applied.append(base_bb_upper)
+        for lag in lag_periods:
+            df[f'{base_bb_upper}_lag_{lag}'] = df[base_bb_upper].shift(lag)
+
+        base_bb_middle = 'Bollinger_Middle'
+        df[base_bb_middle] = bb.bollinger_mavg()
+        applied.append(base_bb_middle)
+        for lag in lag_periods:
+            df[f'{base_bb_middle}_lag_{lag}'] = df[base_bb_middle].shift(lag)
+        
+        base_bb_bandwidth = 'Bollinger_Bandwidth'
+        df[base_bb_bandwidth] = bb.bollinger_wband() / 100
+        applied.append(base_bb_bandwidth)
+        for lag in lag_periods:
+            df[f'{base_bb_bandwidth}_lag_{lag}'] = df[base_bb_bandwidth].shift(lag)
+    
+        base_bb_percentageb = 'Bollinger_PercentageB'
+        df[base_bb_percentageb] = bb.bollinger_pband()
+        applied.append(base_bb_percentageb)
+        for lag in lag_periods:
+            df[f'{base_bb_percentageb}_lag_{lag}'] = df[base_bb_percentageb].shift(lag)
+
+        base_price_above_upper_bb = 'Price_Above_Upper_BB'
+        df[base_price_above_upper_bb] = (df['Close'] > df[base_bb_lower]).astype(int)
+        applied.append(base_price_above_upper_bb)
+        for lag in lag_periods:
+            df[f'{base_price_above_upper_bb}_lag_{lag}'] = df[base_price_above_upper_bb].shift(lag)
+
+        base_price_below_lower_bb = 'Price_Below_Lower_BB'
+        df[base_price_below_lower_bb] = (df['Close'] < df[base_bb_lower]).astype(int)
+        applied.append(base_price_below_lower_bb)
+        for lag in lag_periods:
+            df[f'{base_price_below_lower_bb}_lag_{lag}'] = df[base_price_below_lower_bb].shift(lag)
 
     # --- Stochastic Oscillator (requires 14 and 3) ---
     if all(w in windows and w < n_rows for w in [14, 3]):
         try:
             stoch = StochasticOscillator(high=df['High'], low=df['Low'], close=df['Close'], window=14, smooth_window=3)
-            df['%K'] = stoch.stoch()
-            df['%D'] = stoch.stoch_signal()
-            applied.extend(['Stochastic_%K', 'Stochastic_%D'])
+            base_k_col = "%K"
+            df[base_k_col] = stoch.stoch()
+            applied.append(base_k_col)
+            for lag in lag_periods:
+                df[f'{base_k_col}_lag_{lag}'] = df[base_k_col].shift(lag)
+
+            base_d_col = "%D"
+            df[base_d_col] = stoch.stoch.stoch_signal()
+            applied.append(base_d_col)
+            for lag in lag_periods:
+                df[f'{base_d_col}_lag_{lag}'] = df[base_d_col].shift(lag)
+            
         except Exception as e:
             skipped.append(f"Stochastic_Oscillator (Error: {e})")
 
@@ -332,11 +375,31 @@ def add_technical_indicators(
     if 14 in windows and 14 < n_rows:
         try:
             adx = ADXIndicator(high=df['High'], low=df['Low'], close=df['Close'], window=14)
-            df['ADX_14'] = adx.adx().reindex(df.index)
-            df['Positive_DI'] = adx.adx_pos().reindex(df.index)
-            df['Negative_DI'] = adx.adx_neg().reindex(df.index)
-            df['Trend_Strong_ADX'] = (df['ADX_14'].fillna(0) > 25).astype(int)
-            applied.extend(['ADX_14', 'Positive_DI', 'Negative_DI', 'Trend_Strong_ADX'])
+
+            base_adx_col = 'ADX_14'
+            df[base_adx_col] = adx.adx().reindex(df.index)
+            applied.append(base_adx_col)
+            for lag in lag_periods:
+                df[f'{base_adx_col}_lag_{lag}'] = df[base_adx_col].shift(lag)
+
+            base_pos_di_col = 'Positive_DI'
+            df[base_pos_di_col] = adx.adx_pos().reindex(df.index)
+            applied.append(base_pos_di_col)
+            for lag in lag_periods:
+                df[f'{base_pos_di_col}_lag_{lag}'] = df[base_pos_di_col].shift(lag)
+
+            base_neg_di_col = 'Negative_DI'
+            df[base_neg_di_col] = adx.adx_neg().reindex(df.index)
+            applied.append(base_neg_di_col)
+            for lag in lag_periods:
+                df[f'{base_neg_di_col}_lag_{lag}'] = df[base_neg_di_col].shift(lag)
+
+            base_trend_strong_col = 'Trend_Strong_ADX'
+            df[base_trend_strong_col] = (df[base_adx_col].fillna(0) > 25).astype(int)
+            applied.append(base_trend_strong_col)
+            for lag in lag_periods:
+                df[f'{base_trend_strong_col}_lag_{lag}'] = df[base_trend_strong_col].shift(lag)
+
         except Exception as e:
             skipped.append(f"ADX (Error: {e})")
 
