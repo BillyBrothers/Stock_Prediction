@@ -40,7 +40,7 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
 
     arimax_hypertuned = auto_arima(
         y,
-        exogenous=X_floats,
+        exogenous=X,
         seasonal=False,
         start_p=0,
         start_q=0,
@@ -62,12 +62,17 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
 
         print("Fold", i)
     
-        X_train, X_test = X_floats.iloc[train_idx], X_floats.iloc[test_idx]
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
         if len(y_train) <= best_d:
             warnings.warn(f"Training data length ({len(y_train)}) is too short for differencing order d={best_d}. Skipping this split.")
             continue
+
+
+        # Prepare exog for forecast (this is now X_test.iloc[[0]] directly, NOT differenced)
+        # This will be the *original level* of the exogenous variable for the next time step.
+
 
         if best_d > 0:
             y_train_differenced = y_train.diff(periods=best_d).dropna()
