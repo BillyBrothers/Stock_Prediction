@@ -51,7 +51,10 @@ def run_arima_forecast(msft_df, target_col='Close', n_splits=100):
     tscv = TimeSeriesSplit(n_splits=n_splits)
     actual_values, predicted_values = [], []
 
-    for train_idx, test_idx in tscv.split(msft_df):
+    for i, (train_idx, test_idx) in enumerate(tscv.split(msft_df)):
+
+        print("Fold", i)
+    
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
         if len(y_train) <= best_d:

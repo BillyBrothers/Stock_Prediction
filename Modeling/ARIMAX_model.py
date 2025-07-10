@@ -123,7 +123,7 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
 
             # using the last known differenced value of X to predict the next differenced value of y. 
 
-            forecast = model_fit.forecast(steps=1, exog=exog_forecast_input)
+            forecast = model_fit.forecast(steps=1, exog=exog_forecast_input) # automatically performs differencing on exog_forecast_input and inverse transformation on forecasted value
 
             print(f"  Actual value: {y_test.iloc[0]:.8f}") 
             print(f"  Predicted level: {forecast.iloc[0]}") 
