@@ -28,7 +28,7 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
         raise ValueError(f"Not enough data points ({len(msft_df)}) for {n_splits} splits. Consider reducing n_splits or providing more data.")
 
     
-    X = msft_df.drop(columns=[target_col]).select_dtypes(include=np.number).astype(float)
+    X = msft_df.drop(columns=[target_col]).astype(float)
     y = msft_df[target_col]
 
     if X.empty:
