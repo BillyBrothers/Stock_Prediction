@@ -2,13 +2,13 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import mean_squared_error
-from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 from pmdarima import auto_arima
 import warnings
 
 def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
     """
-    Runs an ARIMAX time series forecast with hyperparameter tuning via auto_arima
+    Runs an SARIMAX time series forecast with hyperparameter tuning via auto_arima
     and walk-forward validation.
 
     Parameters:
@@ -113,8 +113,8 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
             continue
 
         try:
-            model = ARIMA(endog=y_train_differenced, exog=X_train_differenced, order=(best_p, 0, best_q)) # we've already manually differenced earlier, so d is set to 0. 
-            model_fit = model.fit()
+            model = SARIMAX(endog=y_train_differenced, exog=X_train_differenced, order=(best_p, 0, best_q), seasonal_order=(0,0,0,0)) # we've already manually differenced earlier, so d is set to 0. 
+            model_fit = model.fit(disp=False)
 
             # using the last known differenced value of X to predict the next differenced value of y. 
 
