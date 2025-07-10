@@ -123,14 +123,13 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
 
             # using the last known differenced value of X to predict the next differenced value of y. 
 
-            forecast_level_series = model_fit.forecast(steps=1, exog=exog_forecast_input)
-            predicted_level = forecast_level_series.iloc[0]
+            forecast = model_fit.forecast(steps=1, exog=exog_forecast_input)
 
-            print(f"   Actual value (y_test.iloc[0]): {y_test.iloc[0]:.8f}") 
-            print(f"   Predicted level: {predicted_level:.8f}") 
+            print(f"  Actual value: {y_test.iloc[0]:.8f}") 
+            print(f"  Predicted level: {forecast.iloc[0]}") 
 
             actual_values.append(y_test.iloc[0])
-            predicted_values.append(predicted_level)
+            predicted_values.append(forecast.iloc[0])
 
         # # Taking  the last known values of y, add the predicted change, and reconstruct the next value. 
         # # This process is inverse transforming the data back to original scale from differenced to absolute price.
@@ -151,12 +150,12 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
         #     predicted_values.append(predicted_level)
 
         except Exception as e:
-            warnings.warn(f"Error during ARIMA fitting or forecasting for split {i+1}: {e}. Skipping this split.")
+            warnings.warn(f"Error during SARIMAX fitting or forecasting for split {i+1}: {e}. Skipping this split.")
             continue
 
     if not actual_values or not predicted_values:
         raise ValueError("No valid predictions were generated across any splits. This might be due to insufficient data or persistent model fitting errors.")
-
+    
     mse = mean_squared_error(actual_values, predicted_values)
     print(f"\nFinal ARIMAX MSE: {mse}") 
 
