@@ -132,23 +132,23 @@ def run_arimax_forecast(msft_df, target_col='Close', n_splits=100):
             actual_values.append(y_test.iloc[0])
             predicted_values.append(predicted_level)
 
-        # Taking  the last known values of y, add the predicted change, and reconstruct the next value. 
-        # This process is inverse transforming the data back to original scale from differenced to absolute price.
-            predicted_level = None
-            if best_d > 0:
-                last_original_y_values = y_train.iloc[-best_d:]
-                temp_series_for_inverse = np.concatenate([
-                    last_original_y_values.values, # taking the known values of y 
-                    np.array([forecast_diff_value]) # the predicted differenced price 
-                ])
-                predicted_level = np.cumsum(temp_series_for_inverse)[-1] # summing them and then taking the last value
-            else:
-                predicted_level = forecast_diff_value
+        # # Taking  the last known values of y, add the predicted change, and reconstruct the next value. 
+        # # This process is inverse transforming the data back to original scale from differenced to absolute price.
+        #     predicted_level = None
+        #     if best_d > 0:
+        #         last_original_y_values = y_train.iloc[-best_d:]
+        #         temp_series_for_inverse = np.concatenate([
+        #             last_original_y_values.values, # taking the known values of y 
+        #             np.array([forecast_diff_value]) # the predicted differenced price 
+        #         ])
+        #         predicted_level = np.cumsum(temp_series_for_inverse)[-1] # summing them and then taking the last value
+        #     else:
+        #         predicted_level = forecast_diff_value
 
-            print(f"   Actual value (y_test.iloc[0]): {y_test.iloc[0]:.8f}")
-            print(f"   Predicted level (after inverse transform): {predicted_level:.8f}") 
-            actual_values.append(y_test.iloc[0])
-            predicted_values.append(predicted_level)
+        #     print(f"   Actual value (y_test.iloc[0]): {y_test.iloc[0]:.8f}")
+        #     print(f"   Predicted level (after inverse transform): {predicted_level:.8f}") 
+        #     actual_values.append(y_test.iloc[0])
+        #     predicted_values.append(predicted_level)
 
         except Exception as e:
             warnings.warn(f"Error during ARIMA fitting or forecasting for split {i+1}: {e}. Skipping this split.")
