@@ -1,8 +1,10 @@
-# Stock Price Prediction with Statistical & Machine Learning Models
+# Stock Price Prediction with Statistical & Machine Learning Models (Includes App Link)
 
 This project explores and compares the effectiveness of statistical, machine learning and deep learning models for predicting absolute stock price. I employ a multi-model approach, starting with a Naive method to establish a baseline, traditional time-series method (ARIMA),  time-series modeling yet including additional Exogenous features (ARIMAX), ensemble techniques (XGBoost), and finally leveraging advanced deep learning architectures (LSTM Networks).
 
 The primary goal is to predict whether a given stock's closing price at the end of the X_t will be higher or lower than its closing price at the end of X_t-1, using maximum available preceding data at 1-hour intervals.
+
+## Streamlit App Link: https://billy-brothers-stock-prediction.streamlit.app/
 
 ## Project Overview
 
