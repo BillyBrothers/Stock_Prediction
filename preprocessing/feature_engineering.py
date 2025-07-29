@@ -131,11 +131,12 @@ def add_moving_averages(
     elif method == "EMA":
         for w in valid_windows:
             base_ma_col = f"EMA{w}"
-            df[base_ma_col] = df[column].rolling(window=w).mean()
+        # FIX THIS LINE:
+            df[base_ma_col] = df[column].ewm(span=w, adjust=False).mean() # Corrected EMA calculation
             ma_cols_created.append(base_ma_col)
-            
-            for lag in lag_periods:
-                df[f"{base_ma_col}_lag_{lag}"] = df[base_ma_col].shift(lag)
+
+        for lag in lag_periods:
+            df[f"{base_ma_col}_lag_{lag}"] = df[base_ma_col].shift(lag)
 
 
     elif method == "LOG":
@@ -283,21 +284,21 @@ def add_technical_indicators(
         macd = MACD(close=df['Close'], window_slow=26, window_fast=12, window_sign=9)
         df[base_macd_col] = macd.macd()
         df[base_macd_signal_col] = macd.macd_signal()
-        applied.extend(base_macd_col, base_macd_signal_col)
+        applied.extend([base_macd_col, base_macd_signal_col])
 
         for lag in lag_periods:
             df[f'{base_macd_col}_lag_{lag}'] = df[base_macd_col].shift(lag)
             df[f'{base_macd_signal_col}_lag_{lag}'] = df[base_macd_signal_col].shift(lag)
         
-        df['MACD_PREV'] = df[base_macd_col].shift(1).fillna(method = "ffill")
-        df['MACD_Signal_Prev'] = df[base_macd_signal_col].shift(1).fillna(method='ffill')
+        df['MACD_PREV'] = df[base_macd_col].shift(1)
+        df['MACD_Signal_Prev'] = df[base_macd_signal_col]
 
         base_macd_cross_up = 'MACD_Cross_Up'
-        df[base_macd_cross_up] = ((df[base_macd_col] > df[base_macd_signal_col]) & (df['MACD_Prev'] <= df['MACD_Signal_Prev'])).astype(int)
+        df[base_macd_cross_up] = ((df[base_macd_col] > df[base_macd_signal_col]) & (df['MACD_PREV'] <= df['MACD_Signal_Prev'])).astype(int)
         applied.append(base_macd_cross_up)
 
         base_macd_cross_down = 'MACD_Cross_Down'
-        df[base_macd_cross_down] = ((df[base_macd_col] < df[base_macd_signal_col]) & (df['MACD_Prev'] >= df['MACD_Signal_Prev'])).astype(int)
+        df[base_macd_cross_down] = ((df[base_macd_col] < df[base_macd_signal_col]) & (df['MACD_PREV'] >= df['MACD_Signal_Prev'])).astype(int)
         applied.append(base_macd_cross_down)
 
         for lag in lag_periods:
@@ -340,7 +341,7 @@ def add_technical_indicators(
             df[f'{base_bb_percentageb}_lag_{lag}'] = df[base_bb_percentageb].shift(lag)
 
         base_price_above_upper_bb = 'Price_Above_Upper_BB'
-        df[base_price_above_upper_bb] = (df['Close'] > df[base_bb_lower]).astype(int)
+        df[base_price_above_upper_bb] = (df['Close'] > df[base_bb_upper]).astype(int)
         applied.append(base_price_above_upper_bb)
         for lag in lag_periods:
             df[f'{base_price_above_upper_bb}_lag_{lag}'] = df[base_price_above_upper_bb].shift(lag)
@@ -362,7 +363,7 @@ def add_technical_indicators(
                 df[f'{base_k_col}_lag_{lag}'] = df[base_k_col].shift(lag)
 
             base_d_col = "%D"
-            df[base_d_col] = stoch.stoch.stoch_signal()
+            df[base_d_col] = stoch.stoch_signal()
             applied.append(base_d_col)
             for lag in lag_periods:
                 df[f'{base_d_col}_lag_{lag}'] = df[base_d_col].shift(lag)
@@ -456,7 +457,8 @@ def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
 def add_volume_features(
     df: pd.DataFrame,
     volume_sma_windows: list = None,
-    obv_ema_span: int = 9
+    obv_ema_span: int = 9,
+    lag_periods: list = None
 ) -> pd.DataFrame:
     """
     Adds volume-based technical indicators to a DataFrame with window validation.
@@ -484,6 +486,9 @@ def add_volume_features(
     if volume_sma_windows is None:
         volume_sma_windows = [7, 14, 21, 28, 35]
 
+    if lag_periods is None:
+        lag_periods = [1] 
+
     valid_windows = [w for w in volume_sma_windows if w < n_rows]
     skipped_windows = [w for w in volume_sma_windows if w >= n_rows]
 
@@ -492,17 +497,34 @@ def add_volume_features(
 
     # Volume SMAs
     for w in valid_windows:
-        df[f'Volume_SMA_{w}H'] = df['Volume'].rolling(window=w).mean()
+        base_vol_sma_col = f'Volume_SMA_{w}'
+        df[base_vol_sma_col] = df['Volume'].rolling(window=w).mean()
+        # Add lagged versions
+        for lag in lag_periods:
+            df[f'{base_vol_sma_col}_lag_{lag}'] = df[base_vol_sma_col].shift(lag)
 
+    
     # Volume percentage change
-    df['Volume_Change'] = df['Volume'].pct_change()
+    base_vol_change_col = 'Volume_Change'
+    df[base_vol_change_col] = df['Volume'].pct_change()
+    # Add lagged versions
+    for lag in lag_periods:
+        df[f'{base_vol_change_col}_lag_{lag}'] = df[base_vol_change_col].shift(lag)
 
     # OBV and its EMA
+    base_obv_col = 'OBV'
     obv = OnBalanceVolumeIndicator(close=df['Close'], volume=df['Volume'], fillna=False)
-    df['OBV'] = obv.on_balance_volume()
+    df[base_obv_col] = obv.on_balance_volume()
+    # Add lagged versions for OBV
+    for lag in lag_periods:
+        df[f'{base_obv_col}_lag_{lag}'] = df[base_obv_col].shift(lag)
 
     if obv_ema_span < n_rows:
-        df[f'OBV_EMA_{obv_ema_span}H'] = df['OBV'].ewm(span=obv_ema_span, adjust=False).mean()
+        base_obv_ema_col = f'OBV_EMA_{obv_ema_span}'
+        df[base_obv_ema_col] = df[base_obv_col].ewm(span=obv_ema_span, adjust=False).mean()
+        # Add lagged versions for OBV EMA
+        for lag in lag_periods:
+            df[f'{base_obv_ema_col}_lag_{lag}'] = df[base_obv_ema_col].shift(lag)
     else:
         print(f"⚠️ Skipped OBV EMA: span {obv_ema_span} exceeds available data ({n_rows} rows).")
 
@@ -511,22 +533,20 @@ def add_volume_features(
 
 def add_price_features(
     df: pd.DataFrame,
-    normalize: bool = True
+    normalize: bool = True,
+    lag_periods: list = None # Added parameter
 ) -> pd.DataFrame:
     """
-    Adds price-derived candle structure features with optional normalization.
-
-    Features:
-    - High-Low absolute range
-    - Open-Close absolute range
-    - (Optional) Percentage versions of High-Low and Open-Close ranges
+    Adds price-derived candle structure features with optional normalization,
+    and also creates lagged versions to prevent future data leakage.
 
     Parameters:
         df (pd.DataFrame): DataFrame with 'High', 'Low', 'Open', 'Close' columns.
         normalize (bool): Whether to include normalized (%) variants.
+        lag_periods (list): List of lag periods to apply to the features. Defaults to [1].
 
     Returns:
-        pd.DataFrame: Enriched with price structure features.
+        pd.DataFrame: Enriched with price structure features and their lagged versions.
     """
     df = df.copy()
     n_rows = len(df)
@@ -540,15 +560,37 @@ def add_price_features(
     if n_rows < 2:
         print(f"⚠️ Only {n_rows} row(s) available — price features added, but percentage normalization may be unstable.")
 
+    if lag_periods is None:
+        lag_periods = [1] # Default to 1-period lag
+
+    lag_label = 'H' # Assuming hourly data
+
+    # List to hold the names of base features we'll create, so we can loop and lag them
+    base_features_to_lag = []
+
     # Core candle ranges
-    df['High_Low_Range'] = df['High'] - df['Low']
-    df['Open_Close_Range'] = df['Close'] - df['Open']
+    base_hl_range = 'High_Low_Range'
+    df[base_hl_range] = df['High'] - df['Low']
+    base_features_to_lag.append(base_hl_range)
+
+    base_oc_range = 'Open_Close_Range'
+    df[base_oc_range] = df['Close'] - df['Open']
+    base_features_to_lag.append(base_oc_range)
 
     if normalize:
-        # Avoid division warnings
         with np.errstate(divide='ignore', invalid='ignore'):
-            df['High_Low_Range_Pct'] = ((df['High'] - df['Low']) / df['Close'].replace(0, np.nan)) * 100
-            df['Open_Close_Range_Pct'] = ((df['Close'] - df['Open']) / df['Open'].replace(0, np.nan)) * 100
+            base_hl_range_pct = 'High_Low_Range_Pct'
+            df[base_hl_range_pct] = ((df['High'] - df['Low']) / df['Close'].replace(0, np.nan)) * 100
+            base_features_to_lag.append(base_hl_range_pct)
+
+            base_oc_range_pct = 'Open_Close_Range_Pct'
+            df[base_oc_range_pct] = ((df['Close'] - df['Open']) / df['Open'].replace(0, np.nan)) * 100
+            base_features_to_lag.append(base_oc_range_pct)
+
+    # --- Add Lagged Versions for all created features ---
+    for col_name in base_features_to_lag:
+        for lag in lag_periods:
+            df[f'{col_name}_lag_{lag}{lag_label}'] = df[col_name].shift(lag)
 
     return df
 
