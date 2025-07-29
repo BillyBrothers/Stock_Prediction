@@ -128,9 +128,7 @@ if st.sidebar.button("Load Data"):
         st.subheader("📊 Stock Price Trend (Close Price)")
         interactive_candlesticks(df, ticker)
 
-        # --- NaN Diagnostics ---
-        # initial_nan_count = df.isna().sum().sum() # Commenting out to prevent displaying
-        # st.write(f"Initial NaN count (before feature engineering): **{initial_nan_count}**") # Commenting out to prevent displaying
+        
         st.write("Initial shape:", df.shape)
 
         # --- Adaptive Window Trimming ---
@@ -150,7 +148,7 @@ if st.sidebar.button("Load Data"):
             all_windows_applied = []
 
             for feat in selected_blocks:
-                #st.write(f"📣 Applying feature block: {feat}")
+                
 
                 func = FEATURE_FUNCTIONS.get(feat)
                 if not func:
@@ -158,10 +156,7 @@ if st.sidebar.button("Load Data"):
                     continue
 
                 valid_windows = adaptive_feature_windows.get(feat, [])
-                #st.write(f"✅ Valid windows for '{feat}': {valid_windows}")
-                #st.write(f"🔍 Data shape before '{feat}': {df.shape}")
-
-                #st.write(df.head(10))
+                
 
                 try:
                     if feat == "Moving Averages":
@@ -179,7 +174,7 @@ if st.sidebar.button("Load Data"):
                     else:
                         df = func(df)
 
-                    #st.write(f"✅ Finished applying '{feat}' — new shape: {df.shape}")
+                    
                 except Exception as e:
                     st.error(f"❌ Error applying '{feat}': {e}")
                     st.stop() 
@@ -214,85 +209,34 @@ if df.empty:
     st.stop() # Stop further execution if df is empty
 
 
-# st.info(f"Calculated Max Feature Window (from applied features): {st.session_state.max_calculated_feature_window}")
-
-#st.subheader("🧹 Handling Missing Values and Infinite Values...")
-
 # --- Check and Replace Infinity Values ---
 if 'df' in locals(): 
     infinity_count_before_replace = np.isinf(df).sum().sum()
 else:
     infinity_count_before_replace = 0
-#st.write(f"Infinity values found (before replacement): **{infinity_count_before_replace}**")
+
 if infinity_count_before_replace > 0:
-    #st.write("Columns with infinity values:")
-    #st.dataframe(np.isinf(df).sum()[np.isinf(df).sum() > 0])
-    #st.write("Replacing infinity values with NaNs...")
+    
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
-    #st.write(f"Total Infinity values after replacement: **{np.isinf(df).sum().sum()}**") # Should be 0
-
-# Calculate NaNs after feature engineering (and infinity replacement) ---
-# if 'df' in locals():
-#     nans_after_feat_eng = df.isna().sum().sum()
-# else:
-#     0
-# st.write(f"1. Total NaNs after feature engineering (and infinity conversion): **{nans_after_feat_eng}**")
-#if 'df' in locals():
-    #st.write("    Columns with NaNs (and their counts) at this stage:")
-    #st.dataframe(df.isna().sum()[df.isna().sum() > 0])
-#st.markdown("---")
-
+    
 # Account for the largest window size by trimming rows ---
 largest_window_size = st.session_state.max_calculated_feature_window
-#st.write(f"2. Accounting for largest window size ({largest_window_size}) by trimming rows...")
+
 if largest_window_size > 0 and 'df' in locals():
     # Pass the DataFrame and a list containing the single largest window size
     df = trim_nans_by_window(df, [largest_window_size])
-    #st.success(f"Trimmed first {largest_window_size} rows. Rows remaining: {len(df)}")#
-#else:
-    # st.info("No rows trimmed as max window size is 0 or data not loaded.")
-
-# --- Calculate remaining NaNs after window size trimming (Part of previous step) ---
-# if 'df' in locals():
-#     remaining_nans_after_trimming = df.isna().sum().sum()
-# else:
-#     remaining_nans_after_trimming = 0
-#st.write(f"    Remaining NaNs after trimming rows: **{remaining_nans_after_trimming}**")
-# if 'df' in locals():
-#     nan_cols_after_trimming = df.columns[df.isna().any()]
-    #if not nan_cols_after_trimming.empty:
-        #st.write("    Columns with NaNs (and their counts) after trimming:")
-        #st.dataframe(df[nan_cols_after_trimming].isna().sum().sort_values(ascending=False))
-    #else:
-        #st.info("No columns contain NaNs after trimming rows.")
-#st.markdown("---")
-
+    
 #+Use the imputation function ---
-#st.write("Applying custom `impute_features()` function...")
 if 'df' in locals():
     df = impute_features(df)
     st.success("Imputation Complete!")
     st.write("Post Shape Imputation:", df.shape)
-
-    #st.success("Custom imputation applied.")
-#else:
-    #st.info("Cannot apply imputation, data not loaded.")
-#st.markdown("---")
 
 # +Calculate remaining NaNs after imputation function ---
 if 'df' in locals():
     remaining_nans_after_imputation = df.isna().sum().sum()
 else:
     remaining_nans_after_imputation = 0
-#st.write(f"Remaining NaNs after imputation function: **{remaining_nans_after_imputation}**")
-#if remaining_nans_after_imputation > 0 and 'df' in locals():
-    #st.write("    Columns still with NaNs after imputation:")
-    #st.dataframe(df.isna().sum()[df.isna().sum() > 0])
-#elif 'df' in locals():
-    #st.info("No NaNs remain after imputation.")
-#else:
-    #st.info("Data not loaded, cannot check NaNs after imputation.")
-#st.markdown("---")
 
 # If there are remaining NaNs, drop those rows ---
 if 'df' in locals():
@@ -300,48 +244,19 @@ if 'df' in locals():
 else: 
     None # Work on a copy for this final step if needed
 if final_df is not None and remaining_nans_after_imputation > 0:
-    #st.write(" NaNs still remain after imputation. Dropping rows with any remaining NaNs...")
+    
     rows_before_final_drop = len(final_df)
     final_df.dropna(axis=0, inplace=True)
     rows_after_final_drop = len(final_df)
-    #st.success(f"Dropped {rows_before_final_drop - rows_after_final_drop} rows with remaining NaNs.")
-#elif final_df is not None:
-    #st.info("5. No remaining NaNs to drop after imputation.")
-#else:
-    #st.info("Data not loaded, skipping final NaN drop.")
 
 # --- Final Data Quality Check ---
 if final_df is not None:
     final_nan_count = final_df.isna().sum().sum()
     final_infinity_count = np.isinf(final_df).sum().sum()
 
-    #st.subheader("✅ Final Data Quality Check:")
-    #st.write(f"Final NaN count: **{final_nan_count}**")
-    #st.write(f"Final Infinity count: **{final_infinity_count}**")
-
-    #if final_nan_count == 0 and final_infinity_count == 0:
-        #st.success("All NaNs and Infinity values successfully handled! Data is ready for modeling.")
-    #else:
-        #st.error("🚨 WARNING: Some NaNs or Infinity values still remain after final processing. Please review the data or imputation logic.")
-        #if final_nan_count > 0:
-            #st.dataframe(final_df.isna().sum()[final_df.isna().sum() > 0])
-        #if final_infinity_count > 0:
-            #st.dataframe(np.isinf(final_df).sum()[np.isinf(final_df).sum() > 0])
-
-    #engineered_cols = [col for col in final_df.columns if col not in ['Open', 'High', 'Low', 'Close', 'Volume']]
-    #if engineered_cols:
-        #st.subheader("🧬 Engineered Features (Tail)")
-        #st.dataframe(final_df[engineered_cols].tail())
-    #else:
-        #st.info("No new engineered features were added based on your selection.")
-
     st.session_state.df_loaded = final_df.copy() 
     st.success("Data loaded, features engineered, and missing/infinite values handled successfully!")
     st.write("Final shape", df.shape)
-    
-#else:
-    #st.info("No data loaded to perform quality check.")
-
 
 st.sidebar.markdown("---") 
 
@@ -378,7 +293,7 @@ else:
             ax.plot(range(len(results['predicted_values'])), results['predicted_values'], color=results['plot_color'], linestyle=':', alpha=0.5, label='Predicted (Connects Points)')
 
             title_suffix = f" (Order: {results['params']})" if model_name in ["ARIMA Model", "ARIMAX Model"] else ""
-                           #f" (Best Params: {results['params']})" if model_name == "XGBoost Model" else \
+                           #f" (Best Params: {results['params']})" if model_name == "XGBoost Model" else 
                            #f" (Window Size: {results['params']})" if model_name == "LSTM Model" else ""
             ax.set_title(f'{model_name} Forecast{title_suffix}: Actual vs. Predicted per TimeSeriesSplit Fold')
             ax.set_xlabel('Forecast Fold Index')
