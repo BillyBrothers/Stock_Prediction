@@ -53,8 +53,6 @@ def run_xgb_forecast(msft_df, target_col='Close', n_splits=100):
 
     grid_search_cv = TimeSeriesSplit(n_splits=n_splits) 
 
-    # verbose=1 will print progress to the console (not directly in Streamlit app output)
-    # n_jobs=-1 will use all available CPU cores
     grid = GridSearchCV(xgb_base, param_grid, cv=grid_search_cv, scoring='neg_mean_squared_error', verbose=1)
     
 
@@ -81,8 +79,7 @@ def run_xgb_forecast(msft_df, target_col='Close', n_splits=100):
         # Predict only the first step of the test set (as per walk-forward validation strategy)
         y_pred_scaled = xgb_model.predict(X_test[[0]]) # X_test[[0]] keeps it 2D for single sample
 
-        # Inverse transform predictions and actual values back to original scale
-        # y_scaler.inverse_transform expects 2D array, and returns 2D array.
+        
         # We then take [0][0] to get the single scalar value.
         y_pred = y_scaler.inverse_transform(y_pred_scaled.reshape(-1, 1))[0][0]
         y_test = y_scaler.inverse_transform(y_test[[0]])[0][0]
