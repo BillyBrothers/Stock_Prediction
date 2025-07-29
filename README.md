@@ -32,10 +32,10 @@ My analysis will be conducted on a single selection of a Big Tech company (APPLE
 ### Feature Engineering
 Beyond raw price and volume, the following financial indicators are engineered to provide deeper insights into market trends:
 * **Lagged Price:** Previous closing prices shifted by varying time steps to capture temporal dependencies and autocorrelation in price movements.
-    * Window Size: Hourly (Within 1 trading day time frame)
+    * Window Size: Hourly, Daily, Weekly
 * **Lagged Returns:** Historical returns computed from lagged prices using daily, weekly, and monthly time stamps, used to model momentum or mean-reversion behavior in asset prices.
     * Varying Window Size: Hourly, Daily, Weekly
-* **Add Moving Average:** (Window Size: Hourly, Daily, Weekly)
+* **Add Moving Average(s):** (Window Size: Hourly, Daily, Weekly)
   * **Simple Moving Average(**: The unweighted mean of the previous n closing prices using hourly, daily
   * **Exponential Moving Average**: A weighted average that gives more importance to recent prices, making it more responsive to new information.
   * **Logarithmic Moving Average**: A moving average applied to the log-transformed prices to stabilize variance and normalize skewed distributions.
@@ -47,7 +47,7 @@ Beyond raw price and volume, the following financial indicators are engineered t
     * Window Size: 26, 12, 9 hours
   * **Stochastic Oscillator**: A momentum indicator comparing the current closing price to the high-low range over a set period, used to identify overbought or oversold conditions.
     * Window Size: 14, 3 hours
-  * **Average Directional Index**: A non-directional indicator that quantifies the strength of a trend, regardless of its direction, based on the smoothed difference between positive and negative directional movement.
+  * **Average Directional Index (ADI)**: A non-directional indicator that quantifies the strength of a trend, regardless of its direction, based on the smoothed difference between positive and negative directional movement.
     * Window Size: 14 Hours
   * **Bollinger Bands:** Calculated to characterize A price volatility and identify overbought/oversold conditions. The **width** of the bands is used as a feature.
       * Window Size: 2 Hours
@@ -64,7 +64,7 @@ Beyond raw price and volume, the following financial indicators are engineered t
     * Week_of_Year
 * **Volume:** 
   * Volume Rolling Average (SMA)
-    * Window Size: Hourly, Daily (Within a week time frame)
+    * Window Size: Hourly, Daily
   * Percentage Change
 * **Price Differences:** The price difference between the current and previous High, Low, Open, and Close features.
   * High/Low Range
@@ -83,7 +83,7 @@ Skipped due to Feature Importance evaluation tools producing lower MSE scores. U
 
 #### Naïve Model (Baseline)
 - Application: Predicts that the next price value will be the same as the most recent observed price. It serves as a baseline model for price prediction tasks, particularly in time series forecasting, where it assumes prices will persist unchanged into the future.
-- Advantages: Extremely simple to implement and fast to compute. Despite its simplicity, it can perform well in short-term forecasts or in stable, low-volatility markets. It provides a useful benchmark to ensure that more advanced models are adding value.
+- Advantages: Extremely simple to implement and fast to compute. Despite its simplicity, it can perform well in short-term forecasts or in-stable, low-volatility markets. It provides a useful benchmark to ensure that more advanced models are adding value.
 - Limitations: Assumes price continuity without considering trends, seasonality, volatility, or external influences. Performs poorly in highly dynamic or mean-reverting environments, and lacks predictive power in long-term forecasts.
 
 #### ARIMA (Autoregressive Integrated Moving Average)
