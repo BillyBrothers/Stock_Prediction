@@ -1,7 +1,6 @@
 # Core Streamlit and Data Handling
 streamlit
 pandas
-
 matplotlib
 mplfinance
 plotly
@@ -14,6 +13,7 @@ pmdarima
 statsmodels
 tensorflow
 numpy==1.26.4
+ta
 
 
 anyio==4.3.0
