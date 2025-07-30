@@ -4,6 +4,8 @@ This project explores and compares the effectiveness of statistical, machine lea
 
 The primary goal is to predict whether a given stock's closing price at the end of the X_t will be higher or lower than its closing price at the end of X_t-1, using maximum available preceding data at 1-hour intervals.
 
+## Streamlit App Link: https://billy-brothers-stock-prediction.streamlit.app/
+
 ## Project Overview
 
 Accurate stock price prediction is an elusive yet highly coveted outcome in finance. This project aims to investigate the predictive power of diverse modeling techniques and evaluate their abilities to accurately predict a stock's price.
