@@ -1,5 +1,4 @@
-import pandas as pd
-import numpy as np
+
 from scipy import stats
 
 def clean_stock_data(df: pd.DataFrame, z_thresh: float = 3.0):

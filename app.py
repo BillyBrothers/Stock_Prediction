@@ -5,6 +5,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import mplfinance as mpf
 import plotly.graph_objects as go
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
+from sklearn.metrics import mean_squared_error
+from xgboost import XGBRegressor
+from pmdarima import auto_arima
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dropout, BatchNormalization, Dense
+from tensorflow.keras.callbacks import EarlyStopping
+from scipy import stats
+import yfinance as yf
+
 
 # --- Custom Modules ---
 from preprocessing.data_loading import load_stock_data
@@ -293,7 +306,7 @@ else:
             ax.plot(range(len(results['predicted_values'])), results['predicted_values'], color=results['plot_color'], linestyle=':', alpha=0.5, label='Predicted (Connects Points)')
 
             title_suffix = f" (Order: {results['params']})" if model_name in ["ARIMA Model", "ARIMAX Model"] else ""
-                           #f" (Best Params: {results['params']})" if model_name == "XGBoost Model" else 
+                           #f" (Best Params: {results['params']})" if model_name == "XGBoost Model" else \
                            #f" (Window Size: {results['params']})" if model_name == "LSTM Model" else ""
             ax.set_title(f'{model_name} Forecast{title_suffix}: Actual vs. Predicted per TimeSeriesSplit Fold')
             ax.set_xlabel('Forecast Fold Index')
